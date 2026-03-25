@@ -13,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Toaster } from "@/components/ui/sonner";
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -150,6 +151,7 @@ export default function AdminLayout({
         <main className="px-5 py-6 md:px-8 md:py-8">{children}</main>
       </div>
     </div>
+    <Toaster theme="dark" position="top-center" richColors />
     </SessionProvider>
   );
 }

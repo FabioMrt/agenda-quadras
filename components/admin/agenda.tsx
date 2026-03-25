@@ -69,6 +69,19 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
   const hours = Array.from({ length: 16 }, (_, i) => i + 7);
   const today = new Date().toISOString().split("T")[0];
 
+  // Color map per court for visual distinction
+  const COURT_COLORS = [
+    { bg: "bg-arena-accent/15", border: "border-arena-accent/25", text: "text-arena-accent", dot: "bg-arena-accent" },
+    { bg: "bg-violet-500/15", border: "border-violet-500/25", text: "text-violet-400", dot: "bg-violet-400" },
+    { bg: "bg-amber-500/15", border: "border-amber-500/25", text: "text-amber-400", dot: "bg-amber-400" },
+    { bg: "bg-cyan-500/15", border: "border-cyan-500/25", text: "text-cyan-400", dot: "bg-cyan-400" },
+    { bg: "bg-rose-500/15", border: "border-rose-500/25", text: "text-rose-400", dot: "bg-rose-400" },
+  ];
+  const courtColorMap = new Map<string, typeof COURT_COLORS[0]>();
+  courts.forEach((c, i) => {
+    courtColorMap.set(c.name, COURT_COLORS[i % COURT_COLORS.length]);
+  });
+
   const handleCancelBooking = async () => {
     if (!selectedBooking || !cancelReason.trim()) return;
     setCancelLoading(true);
@@ -452,7 +465,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                   </span>
                 </div>
                 {weekData.map(({ date, bookings }) => {
-                  const booking = bookings.find((b) => {
+                  const slotBookings = bookings.filter((b) => {
                     if (selectedCourt) {
                       const court = courts.find((c) => c.id === selectedCourt);
                       return b.time === timeStr && b.courtName === court?.name;
@@ -468,19 +481,26 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                       key={`${date}-${hour}`}
                       className="p-1 min-h-[40px] border-l border-arena-border/50"
                     >
-                      {booking ? (
-                        <button
-                          onClick={() => setSelectedBooking({ booking, date })}
-                          className="w-full bg-arena-accent/15 border border-arena-accent/25 rounded-lg px-1.5 py-1 h-full flex items-center gap-1 hover:bg-arena-accent/25 transition-colors text-left"
-                        >
-                          <User
-                            size={10}
-                            className="text-arena-accent shrink-0"
-                          />
-                          <span className="text-arena-accent text-[0.5625rem] font-medium truncate">
-                            {booking.customerName.split(" ")[0]}
-                          </span>
-                        </button>
+                      {slotBookings.length > 0 ? (
+                        <div className="flex flex-col gap-0.5 h-full">
+                          {slotBookings.map((bk) => {
+                            const colors = courtColorMap.get(bk.courtName) || COURT_COLORS[0];
+                            return (
+                              <button
+                                key={bk.id}
+                                onClick={() => setSelectedBooking({ booking: bk, date })}
+                                className={`w-full ${colors.bg} border ${colors.border} rounded-lg px-1 py-0.5 flex items-center gap-0.5 hover:opacity-80 transition-colors text-left`}
+                              >
+                                <div className={`w-1.5 h-1.5 rounded-full ${colors.dot} shrink-0`} />
+                                <span className={`${colors.text} text-[0.5rem] font-medium truncate`}>
+                                  {slotBookings.length > 1
+                                    ? bk.customerName.split(" ")[0]?.slice(0, 3)
+                                    : bk.customerName.split(" ")[0]}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       ) : (
                         <button
                           onClick={() => handleSlotClick(date, timeStr)}
@@ -505,17 +525,22 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
       </div>
 
       {/* Legend */}
-      <div className="flex gap-4 mt-4">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-arena-accent/15 border border-arena-accent/25" />
-          <span className="text-arena-text-muted text-xs font-medium">
-            Reservado (toque para detalhes)
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-transparent border border-arena-border" />
-          <span className="text-arena-text-muted text-xs font-medium">
-            Livre (toque para reservar)
+      <div className="flex flex-wrap gap-3 mt-4">
+        {courts.map((court) => {
+          const colors = courtColorMap.get(court.name) || COURT_COLORS[0];
+          return (
+            <div key={court.id} className="flex items-center gap-1.5">
+              <div className={`w-2.5 h-2.5 rounded-full ${colors.dot}`} />
+              <span className="text-arena-text-muted text-[0.625rem] font-medium">
+                {court.name}
+              </span>
+            </div>
+          );
+        })}
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded bg-transparent border border-arena-border" />
+          <span className="text-arena-text-muted text-[0.625rem] font-medium">
+            Livre
           </span>
         </div>
       </div>

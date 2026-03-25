@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   CalendarCheck,
@@ -12,8 +12,11 @@ import {
   X,
   Loader2,
   Phone,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 const STATUS_CONFIG = {
   CONFIRMED: {
@@ -86,6 +89,9 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
       });
       if (res.ok) {
         onStatusChange(booking.id, "CONFIRMED");
+        toast.success("Reserva confirmada!", {
+          description: `${booking.courtName} · ${booking.startTime} - ${booking.endTime}`,
+        });
         const msg = `Ola ${booking.customerName}! Sua reserva foi *confirmada*:\n\n` +
           `*${booking.courtName}*\n` +
           `Data: ${formatDateBR(booking.date)}\n` +
@@ -93,7 +99,7 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
           `Valor: R$ ${booking.totalPrice},00\n\n` +
           `O pagamento e feito no local. Te esperamos! ⚽`;
         const url = getWhatsAppUrl(booking.customerPhone, msg);
-        if (url) window.location.href = url;
+        if (url) setTimeout(() => { window.location.href = url; }, 1000);
       }
     } finally {
       setLoading(null);
@@ -111,6 +117,9 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
       });
       if (res.ok) {
         onStatusChange(booking.id, "CANCELLED");
+        toast.error("Reserva cancelada", {
+          description: `${booking.courtName} · ${booking.startTime} - ${booking.endTime}`,
+        });
         const msg = `Ola ${booking.customerName}, infelizmente sua reserva foi *cancelada*:\n\n` +
           `*${booking.courtName}*\n` +
           `Data: ${formatDateBR(booking.date)}\n` +
@@ -118,7 +127,7 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
           `Motivo: ${cancelReason}\n\n` +
           `Pedimos desculpas pelo inconveniente. Entre em contato para reagendar.`;
         const url = getWhatsAppUrl(booking.customerPhone, msg);
-        if (url) window.location.href = url;
+        if (url) setTimeout(() => { window.location.href = url; }, 1000);
         setShowCancelForm(false);
       }
     } finally {
@@ -230,10 +239,39 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
   );
 }
 
+const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+const MONTH_NAMES = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+
 export function AdminDashboardClient({ stats, todayBookings: initialBookings, pendingBookings: initialPending }: Props) {
   const router = useRouter();
   const [bookings, setBookings] = useState(initialBookings);
   const [pending, setPending] = useState(initialPending);
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [dateLoading, setDateLoading] = useState(false);
+
+  const days = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() + i);
+    return d;
+  });
+
+  const fetchBookingsForDate = useCallback(async (dateStr: string) => {
+    setDateLoading(true);
+    try {
+      const res = await fetch(`/api/admin/bookings?date=${dateStr}`);
+      const data = await res.json();
+      if (data.bookings) setBookings(data.bookings);
+    } finally {
+      setDateLoading(false);
+    }
+  }, []);
+
+  const handleDateChange = (dateStr: string) => {
+    setSelectedDate(dateStr);
+    fetchBookingsForDate(dateStr);
+  };
+
+  const isToday = selectedDate === new Date().toISOString().split("T")[0];
 
   const statCards = [
     { label: "Reservas Hoje", value: stats.todayBookings, icon: CalendarCheck, accent: true },
@@ -324,21 +362,60 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings, pe
         </div>
       )}
 
-      {/* Today's Bookings */}
+      {/* Date selector */}
+      <div className="mb-6">
+        <h2 className="font-heading font-bold text-white text-sm tracking-tight mb-3">
+          Reservas por Dia
+        </h2>
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {days.map((day) => {
+            const dateStr = day.toISOString().split("T")[0];
+            const isSelected = dateStr === selectedDate;
+            const dayIsToday = dateStr === new Date().toISOString().split("T")[0];
+            return (
+              <button
+                key={dateStr}
+                onClick={() => handleDateChange(dateStr)}
+                className={`flex flex-col items-center min-w-[52px] py-2 px-1.5 rounded-xl transition-all ${
+                  isSelected
+                    ? "bg-arena-accent text-arena-bg"
+                    : "bg-white/4 border border-arena-border text-arena-text-secondary"
+                }`}
+              >
+                <span className={`text-[0.6rem] font-heading font-semibold ${isSelected ? "text-arena-bg/70" : "text-arena-text-muted"}`}>
+                  {dayIsToday ? "Hoje" : DAY_NAMES[day.getDay()]}
+                </span>
+                <span className={`text-base font-heading font-extrabold leading-none mt-0.5 ${isSelected ? "text-arena-bg" : "text-white"}`}>
+                  {day.getDate()}
+                </span>
+                <span className={`text-[0.6rem] mt-0.5 ${isSelected ? "text-arena-bg/60" : "text-arena-text-muted"}`}>
+                  {MONTH_NAMES[day.getMonth()]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Day Bookings */}
       <div className="bg-arena-surface rounded-2xl border border-arena-border overflow-hidden">
         <div className="flex items-center justify-between px-5 py-4 border-b border-arena-border">
           <h2 className="font-heading font-bold text-white text-sm tracking-tight">
-            Reservas de Hoje
+            {isToday ? "Reservas de Hoje" : `Reservas de ${new Date(selectedDate + "T00:00:00").toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`}
           </h2>
           <span className="text-arena-text-muted text-xs font-heading">
-            {bookings.length} reservas
+            {dateLoading ? "..." : `${bookings.length} reservas`}
           </span>
         </div>
 
-        {bookings.length === 0 ? (
+        {dateLoading ? (
+          <div className="flex justify-center py-10">
+            <div className="w-6 h-6 border-2 border-arena-accent border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : bookings.length === 0 ? (
           <div className="px-5 py-10 text-center">
             <p className="text-arena-text-muted text-sm">
-              Nenhuma reserva para hoje
+              Nenhuma reserva para este dia
             </p>
           </div>
         ) : (
