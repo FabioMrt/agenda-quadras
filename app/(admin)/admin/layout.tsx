@@ -6,10 +6,8 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   CalendarDays,
-  Map,
   BarChart3,
   Menu,
-  X,
   LogOut,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -17,7 +15,6 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/agenda", label: "Agenda", icon: CalendarDays },
-  { href: "/admin/quadras", label: "Quadras", icon: Map },
   { href: "/admin/relatorios", label: "Relatorios", icon: BarChart3 },
 ];
 
