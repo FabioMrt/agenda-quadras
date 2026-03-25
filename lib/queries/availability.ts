@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { TimeSlot } from "@/lib/data/mock-data";
+import type { TimeSlot } from "@/lib/types";
 
 export async function getAvailableSlots(
   courtId: string,

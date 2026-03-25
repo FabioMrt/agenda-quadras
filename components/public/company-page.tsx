@@ -15,7 +15,7 @@ import {
   Share2,
   Heart,
 } from "lucide-react";
-import { Company } from "@/lib/data/mock-data";
+import { Company } from "@/lib/types";
 
 const SPORT_ICONS: Record<string, string> = {
   "Society (Futebol 7)": "\u26BD",

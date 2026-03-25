@@ -12,12 +12,8 @@ import {
   MessageCircle,
   Calendar,
 } from "lucide-react";
-import {
-  Company,
-  Court,
-  TimeSlot,
-  getNext7Days,
-} from "@/lib/data/mock-data";
+import { Company, Court, TimeSlot } from "@/lib/types";
+import { getNext7Days } from "@/lib/dates";
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const MONTH_NAMES = [

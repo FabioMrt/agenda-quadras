@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { Company, Court } from "@/lib/data/mock-data";
+import type { Company, Court } from "@/lib/types";
 
 export async function getCompanyBySlug(slug: string): Promise<Company | null> {
   const company = await prisma.company.findUnique({

@@ -11,7 +11,8 @@ import {
   Search,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { getMockBookings, Booking, BookingStatus } from "@/lib/data/mock-data";
+import { Booking, BookingStatus } from "@/lib/types";
+import { getMockBookings } from "@/lib/data/mock-data";
 
 const STATUS_CONFIG: Record<
   BookingStatus,

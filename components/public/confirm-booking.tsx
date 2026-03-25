@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, CheckCircle2, CalendarCheck, List } from "lucide-react";
-import { Company, Court } from "@/lib/data/mock-data";
+import { Company, Court } from "@/lib/types";
 import { BookingSummary } from "@/components/booking/booking-summary";
 import { AuthModal } from "@/components/auth/auth-modal";
 
