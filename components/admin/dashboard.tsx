@@ -35,10 +35,12 @@ interface BookingItem {
   courtName: string;
   customerName: string;
   customerPhone: string;
+  date: string;
   startTime: string;
   endTime: string;
   totalPrice: number;
   status: "PENDING" | "CONFIRMED" | "CANCELLED";
+  companyName: string;
 }
 
 interface Props {
@@ -51,20 +53,72 @@ interface Props {
   todayBookings: BookingItem[];
 }
 
+function formatDateBR(dateStr: string) {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "2-digit",
+  });
+}
+
+function openWhatsApp(phone: string, message: string) {
+  const digits = phone.replace(/\D/g, "");
+  const fullNumber = digits.length <= 11 ? `55${digits}` : digits;
+  window.open(
+    `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`,
+    "_blank"
+  );
+}
+
 function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatusChange: (id: string, status: string) => void }) {
   const [loading, setLoading] = useState<string | null>(null);
+  const [showCancelForm, setShowCancelForm] = useState(false);
+  const [cancelReason, setCancelReason] = useState("");
   const config = STATUS_CONFIG[booking.status];
 
-  const handleAction = async (status: string) => {
-    setLoading(status);
+  const handleConfirm = async () => {
+    setLoading("CONFIRMED");
     try {
       const res = await fetch(`/api/bookings/${booking.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status }),
+        body: JSON.stringify({ status: "CONFIRMED" }),
       });
       if (res.ok) {
-        onStatusChange(booking.id, status);
+        onStatusChange(booking.id, "CONFIRMED");
+        const msg = `Ola ${booking.customerName}! Sua reserva foi *confirmada*:\n\n` +
+          `*${booking.courtName}*\n` +
+          `Data: ${formatDateBR(booking.date)}\n` +
+          `Horario: ${booking.startTime} - ${booking.endTime}\n` +
+          `Valor: R$ ${booking.totalPrice},00\n\n` +
+          `O pagamento e feito no local. Te esperamos! ⚽`;
+        openWhatsApp(booking.customerPhone, msg);
+      }
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!cancelReason.trim()) return;
+    setLoading("CANCELLED");
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CANCELLED" }),
+      });
+      if (res.ok) {
+        onStatusChange(booking.id, "CANCELLED");
+        const msg = `Ola ${booking.customerName}, infelizmente sua reserva foi *cancelada*:\n\n` +
+          `*${booking.courtName}*\n` +
+          `Data: ${formatDateBR(booking.date)}\n` +
+          `Horario: ${booking.startTime} - ${booking.endTime}\n\n` +
+          `Motivo: ${cancelReason}\n\n` +
+          `Pedimos desculpas pelo inconveniente. Entre em contato para reagendar.`;
+        openWhatsApp(booking.customerPhone, msg);
+        setShowCancelForm(false);
       }
     } finally {
       setLoading(null);
@@ -107,10 +161,10 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
       </div>
 
       {/* Action buttons for PENDING bookings */}
-      {booking.status === "PENDING" && (
+      {booking.status === "PENDING" && !showCancelForm && (
         <div className="flex gap-2 mt-3 ml-13">
           <button
-            onClick={() => handleAction("CONFIRMED")}
+            onClick={handleConfirm}
             disabled={loading !== null}
             className="flex-1 flex items-center justify-center gap-1.5 bg-arena-accent/15 border border-arena-accent/30 text-arena-accent font-heading font-semibold text-xs tracking-wide rounded-xl py-2 hover:bg-arena-accent/25 transition-colors disabled:opacity-50"
           >
@@ -122,17 +176,46 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
             Confirmar
           </button>
           <button
-            onClick={() => handleAction("CANCELLED")}
+            onClick={() => setShowCancelForm(true)}
             disabled={loading !== null}
             className="flex-1 flex items-center justify-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-400 font-heading font-semibold text-xs tracking-wide rounded-xl py-2 hover:bg-red-500/20 transition-colors disabled:opacity-50"
           >
-            {loading === "CANCELLED" ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : (
-              <X size={13} />
-            )}
-            Recusar
+            <X size={13} />
+            Cancelar
           </button>
+        </div>
+      )}
+
+      {/* Cancel reason form */}
+      {showCancelForm && (
+        <div className="mt-3 ml-13 space-y-2">
+          <input
+            type="text"
+            value={cancelReason}
+            onChange={(e) => setCancelReason(e.target.value)}
+            placeholder="Motivo do cancelamento..."
+            className="w-full bg-white/4 border border-red-500/20 rounded-xl px-3 py-2.5 text-white text-xs placeholder:text-arena-text-muted/60 focus:outline-none focus:border-red-500/40 transition-all"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleCancel}
+              disabled={!cancelReason.trim() || loading !== null}
+              className="flex-1 flex items-center justify-center gap-1.5 bg-red-500/15 border border-red-500/25 text-red-400 font-heading font-semibold text-xs rounded-xl py-2 disabled:opacity-50"
+            >
+              {loading === "CANCELLED" ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <X size={13} />
+              )}
+              Confirmar Cancelamento
+            </button>
+            <button
+              onClick={() => { setShowCancelForm(false); setCancelReason(""); }}
+              className="px-4 text-arena-text-muted text-xs font-heading font-semibold rounded-xl py-2 bg-white/4 border border-arena-border"
+            >
+              Voltar
+            </button>
+          </div>
         </div>
       )}
     </div>

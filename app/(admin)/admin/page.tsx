@@ -20,10 +20,12 @@ export default async function AdminDashboard() {
     courtName: b.court.name,
     customerName: b.guestName ?? b.user?.name ?? b.user?.email ?? "Usuario",
     customerPhone: b.guestPhone ?? "",
+    date: b.date.toISOString().split("T")[0],
     startTime: b.startTime,
     endTime: b.endTime,
     totalPrice: b.totalPrice,
     status: b.status as "PENDING" | "CONFIRMED" | "CANCELLED",
+    companyName: b.court.company.name,
   }));
 
   return <AdminDashboardClient stats={stats} todayBookings={bookings} />;

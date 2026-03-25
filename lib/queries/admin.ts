@@ -61,7 +61,7 @@ export async function getTodayBookings(companyId: string) {
       status: { not: "CANCELLED" },
     },
     include: {
-      court: true,
+      court: { include: { company: true } },
       user: { select: { name: true, email: true } },
     },
     orderBy: { startTime: "asc" },
