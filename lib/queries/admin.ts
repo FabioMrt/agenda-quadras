@@ -82,6 +82,138 @@ export async function getAdminBookings(companyId: string) {
   });
 }
 
+export async function getWeekBookings(companyId: string, weekOffset: number = 0) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Monday of target week
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7);
+
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+
+  const bookings = await prisma.booking.findMany({
+    where: {
+      court: { companyId },
+      date: { gte: monday, lte: sunday },
+      status: { not: "CANCELLED" },
+    },
+    include: {
+      court: true,
+      user: { select: { name: true } },
+    },
+    orderBy: { startTime: "asc" },
+  });
+
+  const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
+
+  const days = [];
+  for (let d = 0; d < 7; d++) {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + d);
+    const dateStr = date.toISOString().split("T")[0];
+
+    const dayBookings = bookings
+      .filter((b) => b.date.toISOString().split("T")[0] === dateStr)
+      .map((b) => ({
+        time: b.startTime,
+        courtName: b.court.name,
+        customerName: b.user.name ?? "Usuario",
+      }));
+
+    days.push({
+      date: dateStr,
+      dayName: DAY_NAMES[date.getDay()],
+      dayNumber: date.getDate(),
+      bookings: dayBookings,
+    });
+  }
+
+  return days;
+}
+
+export async function getReportData(companyId: string) {
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+  const [monthBookings, courts] = await Promise.all([
+    prisma.booking.findMany({
+      where: {
+        court: { companyId },
+        date: { gte: startOfMonth },
+        status: "CONFIRMED",
+      },
+      include: { court: true },
+    }),
+    prisma.court.findMany({
+      where: { companyId, active: true },
+      include: {
+        _count: {
+          select: {
+            bookings: {
+              where: {
+                date: { gte: startOfMonth },
+                status: { not: "CANCELLED" },
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  const monthRevenue = monthBookings.reduce((s, b) => s + b.totalPrice, 0);
+
+  // Count bookings per hour for peak hours
+  const hourCounts: Record<string, number> = {};
+  monthBookings.forEach((b) => {
+    const hour = b.startTime;
+    hourCounts[hour] = (hourCounts[hour] || 0) + 1;
+  });
+
+  const peakHours = Object.entries(hourCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([hour, count]) => {
+      const endHour = (parseInt(hour) + 1).toString().padStart(2, "0") + ":00";
+      const maxPossible = now.getDate() * courts.length;
+      return {
+        hour: `${hour}-${endHour}`,
+        count,
+        percentage: maxPossible > 0 ? Math.round((count / maxPossible) * 100) : 0,
+      };
+    });
+
+  // Top court
+  const courtStats = courts
+    .map((c) => ({
+      name: c.name,
+      count: c._count.bookings,
+      revenue: monthBookings
+        .filter((b) => b.courtId === c.id)
+        .reduce((s, b) => s + b.totalPrice, 0),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const topCourt = courtStats[0] ?? null;
+
+  // Occupancy rate
+  const totalSlots = courts.length > 0 ? courts.length * 16 * now.getDate() : 1;
+  const occupancyRate = Math.min(
+    Math.round((monthBookings.length / totalSlots) * 100),
+    100
+  );
+
+  return {
+    monthRevenue,
+    occupancyRate,
+    totalBookings: monthBookings.length,
+    topCourt,
+    peakHours,
+  };
+}
+
 export async function getCompanyCourts(companyId: string) {
   return prisma.court.findMany({
     where: { companyId },
