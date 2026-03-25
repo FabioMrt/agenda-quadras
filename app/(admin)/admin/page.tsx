@@ -19,6 +19,7 @@ export default async function AdminDashboard() {
     id: b.id,
     courtName: b.court.name,
     customerName: b.guestName ?? b.user?.name ?? b.user?.email ?? "Usuario",
+    customerPhone: b.guestPhone ?? "",
     startTime: b.startTime,
     endTime: b.endTime,
     totalPrice: b.totalPrice,

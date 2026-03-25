@@ -1,11 +1,17 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   CalendarCheck,
   DollarSign,
   Map,
   TrendingUp,
   Clock,
+  Check,
+  X,
+  Loader2,
+  Phone,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
@@ -28,6 +34,7 @@ interface BookingItem {
   id: string;
   courtName: string;
   customerName: string;
+  customerPhone: string;
   startTime: string;
   endTime: string;
   totalPrice: number;
@@ -44,13 +51,113 @@ interface Props {
   todayBookings: BookingItem[];
 }
 
-export function AdminDashboardClient({ stats, todayBookings }: Props) {
+function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatusChange: (id: string, status: string) => void }) {
+  const [loading, setLoading] = useState<string | null>(null);
+  const config = STATUS_CONFIG[booking.status];
+
+  const handleAction = async (status: string) => {
+    setLoading(status);
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (res.ok) {
+        onStatusChange(booking.id, status);
+      }
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  return (
+    <div className="px-5 py-4">
+      <div className="flex items-center gap-4">
+        <div className="w-9 h-9 rounded-lg bg-white/4 flex items-center justify-center shrink-0">
+          <Clock size={16} className="text-arena-text-muted" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-white text-sm font-semibold truncate">
+              {booking.startTime} – {booking.endTime}
+            </p>
+            <Badge
+              variant="outline"
+              className={`text-[0.5625rem] font-heading font-semibold uppercase tracking-wider px-1.5 py-0 rounded shrink-0 ${config.className}`}
+            >
+              {config.label}
+            </Badge>
+          </div>
+          <p className="text-arena-text-muted text-xs truncate">
+            {booking.courtName} · {booking.customerName}
+          </p>
+          {booking.customerPhone && (
+            <p className="text-arena-text-muted text-[0.625rem] flex items-center gap-1 mt-0.5">
+              <Phone size={10} />
+              {booking.customerPhone}
+            </p>
+          )}
+        </div>
+        <div className="text-right shrink-0">
+          <p className="text-arena-accent font-heading font-bold text-sm">
+            R$ {booking.totalPrice}
+          </p>
+        </div>
+      </div>
+
+      {/* Action buttons for PENDING bookings */}
+      {booking.status === "PENDING" && (
+        <div className="flex gap-2 mt-3 ml-13">
+          <button
+            onClick={() => handleAction("CONFIRMED")}
+            disabled={loading !== null}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-arena-accent/15 border border-arena-accent/30 text-arena-accent font-heading font-semibold text-xs tracking-wide rounded-xl py-2 hover:bg-arena-accent/25 transition-colors disabled:opacity-50"
+          >
+            {loading === "CONFIRMED" ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <Check size={13} />
+            )}
+            Confirmar
+          </button>
+          <button
+            onClick={() => handleAction("CANCELLED")}
+            disabled={loading !== null}
+            className="flex-1 flex items-center justify-center gap-1.5 bg-red-500/10 border border-red-500/20 text-red-400 font-heading font-semibold text-xs tracking-wide rounded-xl py-2 hover:bg-red-500/20 transition-colors disabled:opacity-50"
+          >
+            {loading === "CANCELLED" ? (
+              <Loader2 size={13} className="animate-spin" />
+            ) : (
+              <X size={13} />
+            )}
+            Recusar
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function AdminDashboardClient({ stats, todayBookings: initialBookings }: Props) {
+  const router = useRouter();
+  const [bookings, setBookings] = useState(initialBookings);
+
   const statCards = [
     { label: "Reservas Hoje", value: stats.todayBookings, icon: CalendarCheck, accent: true },
     { label: "Receita do Mes", value: `R$ ${stats.monthRevenue.toLocaleString("pt-BR")}`, icon: DollarSign, accent: false },
     { label: "Quadras Ativas", value: stats.activeCourts, icon: Map, accent: false },
     { label: "Taxa Ocupacao", value: `${stats.occupancyRate}%`, icon: TrendingUp, accent: false },
   ];
+
+  const handleStatusChange = (id: string, newStatus: string) => {
+    setBookings((prev) =>
+      prev.map((b) =>
+        b.id === id ? { ...b, status: newStatus as BookingItem["status"] } : b
+      )
+    );
+    router.refresh();
+  };
 
   return (
     <div>
@@ -105,11 +212,11 @@ export function AdminDashboardClient({ stats, todayBookings }: Props) {
             Reservas de Hoje
           </h2>
           <span className="text-arena-text-muted text-xs font-heading">
-            {todayBookings.length} reservas
+            {bookings.length} reservas
           </span>
         </div>
 
-        {todayBookings.length === 0 ? (
+        {bookings.length === 0 ? (
           <div className="px-5 py-10 text-center">
             <p className="text-arena-text-muted text-sm">
               Nenhuma reserva para hoje
@@ -117,35 +224,13 @@ export function AdminDashboardClient({ stats, todayBookings }: Props) {
           </div>
         ) : (
           <div className="divide-y divide-arena-border">
-            {todayBookings.map((booking) => {
-              const config = STATUS_CONFIG[booking.status];
-              return (
-                <div key={booking.id} className="flex items-center gap-4 px-5 py-3.5">
-                  <div className="w-9 h-9 rounded-lg bg-white/4 flex items-center justify-center shrink-0">
-                    <Clock size={16} className="text-arena-text-muted" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className="text-white text-sm font-semibold truncate">
-                        {booking.startTime} – {booking.endTime}
-                      </p>
-                      <Badge
-                        variant="outline"
-                        className={`text-[0.5625rem] font-heading font-semibold uppercase tracking-wider px-1.5 py-0 rounded shrink-0 ${config.className}`}
-                      >
-                        {config.label}
-                      </Badge>
-                    </div>
-                    <p className="text-arena-text-muted text-xs truncate">
-                      {booking.courtName} · {booking.customerName}
-                    </p>
-                  </div>
-                  <p className="text-arena-accent font-heading font-bold text-sm shrink-0">
-                    R$ {booking.totalPrice}
-                  </p>
-                </div>
-              );
-            })}
+            {bookings.map((booking) => (
+              <BookingRow
+                key={booking.id}
+                booking={booking}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
           </div>
         )}
       </div>
