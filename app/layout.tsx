@@ -1,10 +1,17 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Sora, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const sora = Sora({
+  variable: "--font-sora",
   subsets: ["latin"],
+  weight: ["400", "600", "700", "800"],
+});
+
+const jakarta = Plus_Jakarta_Sans({
+  variable: "--font-jakarta",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -17,7 +24,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#0a0f1e",
+  themeColor: "#060B18",
 };
 
 export default function RootLayout({
@@ -26,8 +33,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${inter.variable} dark`}>
-      <body suppressHydrationWarning className="min-h-screen bg-[#0a0f1e] font-sans antialiased">
+    <html lang="pt-BR" className={`${sora.variable} ${jakarta.variable} dark`}>
+      <body suppressHydrationWarning className="min-h-screen bg-arena-bg font-body antialiased text-white">
+        <div className="noise" />
         {children}
       </body>
     </html>

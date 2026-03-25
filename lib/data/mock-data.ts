@@ -138,6 +138,68 @@ export function getNext7Days(): Date[] {
   return days;
 }
 
+export type BookingStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
+
+export interface Booking {
+  id: string;
+  companySlug: string;
+  companyName: string;
+  courtId: string;
+  courtName: string;
+  courtType: string;
+  date: string; // ISO date string
+  startTime: string;
+  endTime: string;
+  totalPrice: number;
+  status: BookingStatus;
+  createdAt: string;
+}
+
+export const mockBookings: Booking[] = [
+  {
+    id: "bk-001",
+    companySlug: "arena-elite",
+    companyName: "Arena Elite Sports",
+    courtId: "society-1",
+    courtName: "Quadra Society",
+    courtType: "Society (Futebol 7)",
+    date: new Date(Date.now() + 2 * 86400000).toISOString().split("T")[0],
+    startTime: "19:00",
+    endTime: "20:00",
+    totalPrice: 120,
+    status: "CONFIRMED",
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    id: "bk-002",
+    companySlug: "arena-elite",
+    companyName: "Arena Elite Sports",
+    courtId: "beach-tennis-1",
+    courtName: "Quadra Beach Tenis",
+    courtType: "Beach Tenis",
+    date: new Date(Date.now() + 5 * 86400000).toISOString().split("T")[0],
+    startTime: "08:00",
+    endTime: "09:00",
+    totalPrice: 80,
+    status: "PENDING",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "bk-003",
+    companySlug: "arena-elite",
+    companyName: "Arena Elite Sports",
+    courtId: "society-1",
+    courtName: "Quadra Society",
+    courtType: "Society (Futebol 7)",
+    date: new Date(Date.now() - 3 * 86400000).toISOString().split("T")[0],
+    startTime: "20:00",
+    endTime: "21:00",
+    totalPrice: 120,
+    status: "CANCELLED",
+    createdAt: new Date(Date.now() - 5 * 86400000).toISOString(),
+  },
+];
+
 export function getCompanyBySlug(slug: string): Company | null {
   return companies[slug] ?? null;
 }
@@ -151,4 +213,8 @@ export function getCourtById(
   const court = company.courts.find((c) => c.id === courtId);
   if (!court) return null;
   return { company, court };
+}
+
+export function getMockBookings(): Booking[] {
+  return mockBookings;
 }

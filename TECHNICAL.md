@@ -25,17 +25,20 @@
 .
 ├── app/
 │   ├── (public)/
-│   │   ├── [slug]/                  # Página da empresa — lista quadras
+│   │   ├── [slug]/                  # Pagina da empresa — lista quadras
 │   │   │   ├── page.tsx
-│   │   │   └── agendar/
-│   │   │       ├── page.tsx         # Seleção de data/hora
-│   │   │       └── confirmar/
-│   │   │           └── page.tsx     # Auth lazy + pagamento
+│   │   │   ├── not-found.tsx
+│   │   │   └── quadra/
+│   │   │       └── [courtId]/
+│   │   │           ├── page.tsx     # Agenda da quadra (data + horarios)
+│   │   │           └── confirmar/
+│   │   │               └── page.tsx # Auth lazy + resumo + confirmacao
 │   │   └── meus-agendamentos/
 │   │       └── page.tsx
 │   ├── (admin)/
 │   │   └── admin/
 │   │       ├── layout.tsx           # Guard: COMPANY_ADMIN only
+│   │       ├── login/page.tsx
 │   │       ├── page.tsx             # Dashboard
 │   │       ├── agenda/page.tsx
 │   │       ├── quadras/page.tsx
@@ -43,6 +46,7 @@
 │   ├── (super-admin)/
 │   │   └── super-admin/
 │   │       ├── layout.tsx           # Guard: SUPER_ADMIN only
+│   │       ├── login/page.tsx
 │   │       ├── page.tsx
 │   │       └── empresas/
 │   │           ├── page.tsx
@@ -54,23 +58,28 @@
 │   │   └── webhooks/payment/route.ts
 │   └── layout.tsx
 ├── components/
+│   ├── public/
+│   │   ├── company-page.tsx         # Pagina da empresa (client component)
+│   │   ├── court-schedule.tsx       # Agenda da quadra (client component)
+│   │   ├── confirm-booking.tsx      # Fluxo de confirmacao (auth + resumo + sucesso)
+│   │   └── my-bookings.tsx          # Lista de agendamentos do usuario
 │   ├── booking/
-│   │   ├── CourtCard.tsx
-│   │   ├── DatePicker.tsx
-│   │   ├── TimeSlotGrid.tsx
-│   │   └── BookingSummary.tsx
+│   │   └── booking-summary.tsx      # Card de resumo da reserva
 │   ├── auth/
-│   │   └── AuthModal.tsx            # Google + Magic Link — aparece na confirmação
+│   │   └── auth-modal.tsx           # Google + Magic Link — aparece na confirmacao
 │   └── ui/                          # shadcn/ui components
 ├── lib/
-│   ├── auth.ts                      # Auth.js config
-│   ├── prisma.ts                    # Prisma client singleton
-│   ├── availability.ts              # Lógica de slots disponíveis
-│   └── emails/                      # React Email templates
-├── middleware.ts                    # Proteção de rotas por role
+│   ├── data/
+│   │   └── mock-data.ts             # Dados mock (sera substituido por Prisma)
+│   ├── utils.ts                     # cn() utility
+│   ├── auth.ts                      # Auth.js config (futuro)
+│   ├── prisma.ts                    # Prisma client singleton (futuro)
+│   ├── availability.ts              # Logica de slots disponiveis (futuro)
+│   └── emails/                      # React Email templates (futuro)
+├── middleware.ts                    # Protecao de rotas por role (futuro)
 ├── prisma/
-│   └── schema.prisma
-└── .env.local
+│   └── schema.prisma               # (futuro)
+└── .env.local                       # (futuro)
 ```
 
 ---
