@@ -15,8 +15,10 @@ import {
   MapPin,
   Calendar,
   DollarSign,
+  Repeat,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 
 interface BookingDetail {
   id: string;
@@ -27,6 +29,7 @@ interface BookingDetail {
   customerPhone: string;
   totalPrice: number;
   status: string;
+  isRecurring?: boolean;
 }
 
 interface DaySchedule {
@@ -111,6 +114,9 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
           const num = digits.length <= 11 ? `55${digits}` : digits;
           window.location.href = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
         }
+        toast.error("Reserva cancelada", {
+          description: `${selectedBooking.booking.courtName} · ${selectedBooking.booking.time}`,
+        });
         setSelectedBooking(null);
         setCancelReason("");
         router.refresh();
@@ -231,6 +237,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
       );
 
       setManualForm(null);
+      toast.success("Reserva criada!", { description: `${manualForm.courtName} · ${manualForm.time}` });
       router.refresh();
     } catch {
       setError("Erro de conexao");
@@ -485,13 +492,18 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                         <div className="flex flex-col gap-0.5 h-full">
                           {slotBookings.map((bk) => {
                             const colors = courtColorMap.get(bk.courtName) || COURT_COLORS[0];
+                            const isRec = bk.isRecurring;
                             return (
                               <button
                                 key={bk.id}
                                 onClick={() => setSelectedBooking({ booking: bk, date })}
-                                className={`w-full ${colors.bg} border ${colors.border} rounded-lg px-1 py-0.5 flex items-center gap-0.5 hover:opacity-80 transition-colors text-left`}
+                                className={`w-full ${colors.bg} border ${isRec ? "border-dashed" : ""} ${colors.border} rounded-lg px-1 py-0.5 flex items-center gap-0.5 hover:opacity-80 transition-colors text-left`}
                               >
-                                <div className={`w-1.5 h-1.5 rounded-full ${colors.dot} shrink-0`} />
+                                {isRec ? (
+                                  <Repeat size={8} className={`${colors.text} shrink-0`} />
+                                ) : (
+                                  <div className={`w-1.5 h-1.5 rounded-full ${colors.dot} shrink-0`} />
+                                )}
                                 <span className={`${colors.text} text-[0.5rem] font-medium truncate`}>
                                   {slotBookings.length > 1
                                     ? bk.customerName.split(" ")[0]?.slice(0, 3)
@@ -537,6 +549,14 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
             </div>
           );
         })}
+        <div className="flex items-center gap-1.5">
+          <div className="w-2.5 h-2.5 rounded border border-dashed border-violet-400/50 flex items-center justify-center">
+            <Repeat size={6} className="text-violet-400" />
+          </div>
+          <span className="text-arena-text-muted text-[0.625rem] font-medium">
+            Fixo
+          </span>
+        </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded bg-transparent border border-arena-border" />
           <span className="text-arena-text-muted text-[0.625rem] font-medium">
@@ -620,13 +640,22 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
                 <Badge
                   variant="outline"
                   className="bg-arena-accent/15 text-arena-accent border-arena-accent/30 text-[0.625rem] font-heading font-semibold uppercase tracking-wider px-2 py-0.5"
                 >
                   {selectedBooking.booking.status === "CONFIRMED" ? "Confirmado" : selectedBooking.booking.status === "PENDING" ? "Pendente" : "Cancelado"}
                 </Badge>
+                {selectedBooking.booking.isRecurring && (
+                  <Badge
+                    variant="outline"
+                    className="bg-violet-500/15 text-violet-400 border-violet-500/30 border-dashed text-[0.625rem] font-heading font-semibold uppercase tracking-wider px-2 py-0.5 flex items-center gap-1"
+                  >
+                    <Repeat size={10} />
+                    Fixo
+                  </Badge>
+                )}
               </div>
             </div>
 

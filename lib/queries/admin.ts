@@ -140,6 +140,7 @@ export async function getWeekBookings(companyId: string, weekOffset: number = 0)
         customerPhone: b.guestPhone ?? "",
         totalPrice: b.totalPrice,
         status: b.status as string,
+        isRecurring: b.isRecurring,
       }));
 
     days.push({

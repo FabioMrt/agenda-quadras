@@ -104,14 +104,14 @@ export default function SuperAdminLayout({
     <SessionProvider>
     <div className="min-h-screen bg-arena-bg flex">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-[240px] flex-col bg-arena-surface border-r border-arena-border shrink-0 fixed inset-y-0 left-0 z-30">
+      <aside className="hidden lg:flex w-[240px] flex-col bg-arena-surface border-r border-arena-border shrink-0 fixed inset-y-0 left-0 z-30">
         <SidebarContent pathname={pathname} />
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 md:ml-[240px]">
-        {/* Mobile header */}
-        <header className="md:hidden flex items-center justify-between px-5 pt-14 pb-4">
+      <div className="flex-1 lg:ml-[240px]">
+        {/* Mobile/Tablet header */}
+        <header className="lg:hidden flex items-center justify-between px-5 pt-14 pb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-linear-to-br from-violet-500 to-purple-600 flex items-center justify-center">
               <Shield size={16} className="text-white" />
@@ -138,7 +138,7 @@ export default function SuperAdminLayout({
           </Sheet>
         </header>
 
-        <main className="px-5 py-6 md:px-8 md:py-8">{children}</main>
+        <main className="px-5 py-6 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
     </SessionProvider>

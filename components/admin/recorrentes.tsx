@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import {
   Repeat,
   Plus,
@@ -96,6 +97,9 @@ export function RecorrentesClient({ courts }: Props) {
       }
 
       setResult(data);
+      toast.success(`${data.created} reservas criadas!`, {
+        description: data.skipped > 0 ? `${data.skipped} horarios ja ocupados` : undefined,
+      });
     } catch {
       setError("Erro de conexao");
     } finally {

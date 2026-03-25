@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
           courtId,
           guestName: guestName || "Horario fixo",
           guestPhone: guestPhone || null,
+          isRecurring: true,
           date,
           startTime,
           endTime,
