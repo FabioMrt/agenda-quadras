@@ -73,7 +73,7 @@ function getWhatsAppUrl(phone: string, message: string): string | null {
   return `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`;
 }
 
-function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatusChange: (id: string, status: string) => void }) {
+function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booking: BookingItem; onStatusChange: (id: string, status: string) => void; alwaysShowDate?: boolean }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
@@ -135,7 +135,7 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
     }
   };
 
-  const showDate = booking.date !== new Date().toISOString().split("T")[0];
+  const showDate = alwaysShowDate || booking.date !== new Date().toISOString().split("T")[0];
 
   return (
     <div className="px-5 py-4">
@@ -356,6 +356,7 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings, pe
                 key={booking.id}
                 booking={booking}
                 onStatusChange={handleStatusChange}
+                alwaysShowDate
               />
             ))}
           </div>
