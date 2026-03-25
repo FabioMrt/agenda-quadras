@@ -68,6 +68,21 @@ export async function getTodayBookings(companyId: string) {
   });
 }
 
+export async function getPendingBookings(companyId: string) {
+  return prisma.booking.findMany({
+    where: {
+      court: { companyId },
+      status: "PENDING",
+      date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+    },
+    include: {
+      court: { include: { company: true } },
+      user: { select: { name: true, email: true } },
+    },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  });
+}
+
 export async function getAdminBookings(companyId: string) {
   return prisma.booking.findMany({
     where: {

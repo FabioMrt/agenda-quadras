@@ -44,6 +44,7 @@ export function CourtSchedulePage({
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
+  const [slotsError, setSlotsError] = useState(false);
   const dateScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,6 +55,7 @@ export function CourtSchedulePage({
   useEffect(() => {
     if (!selectedDate || !court.id) return;
     setLoadingSlots(true);
+    setSlotsError(false);
     const dateStr = selectedDate.toISOString().split("T")[0];
     fetch("/api/availability", {
       method: "POST",
@@ -62,7 +64,7 @@ export function CourtSchedulePage({
     })
       .then((r) => r.json())
       .then((data) => setSlots(data.slots || []))
-      .catch(() => setSlots([]))
+      .catch(() => { setSlots([]); setSlotsError(true); })
       .finally(() => setLoadingSlots(false));
   }, [selectedDate, court.id]);
 
@@ -220,14 +222,17 @@ export function CourtSchedulePage({
 
       {/* Time Slots */}
       <div className="px-5 mt-7">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-2">
           <h2 className="font-heading text-base font-bold tracking-tight text-white">
             Horarios Disponiveis
           </h2>
           <span className="text-arena-text-muted text-xs font-heading font-medium">
-            {availableCount} livres
+            {loadingSlots ? "..." : `${availableCount} livres`}
           </span>
         </div>
+        <p className="text-arena-text-muted text-xs mb-4">
+          Sessoes de 1 hora · R$ {court.pricePerHour},00 cada
+        </p>
 
         {/* Legend */}
         <div className="flex gap-5 mb-5">
@@ -245,6 +250,29 @@ export function CourtSchedulePage({
           ))}
         </div>
 
+        {/* Loading state */}
+        {loadingSlots && (
+          <div className="flex justify-center py-10">
+            <div className="w-6 h-6 border-2 border-arena-accent border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+
+        {/* Error state */}
+        {slotsError && !loadingSlots && (
+          <div className="text-center py-10">
+            <p className="text-red-400 text-sm font-medium">Erro ao carregar horarios</p>
+            <p className="text-arena-text-muted text-xs mt-1">Tente novamente em instantes</p>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {!loadingSlots && !slotsError && slots.length === 0 && (
+          <div className="text-center py-10">
+            <p className="text-arena-text-muted text-sm">Sem horarios disponiveis neste dia</p>
+          </div>
+        )}
+
+        {!loadingSlots && !slotsError && slots.length > 0 && (
         <div className="grid grid-cols-3 gap-2.5">
           {slots.map((slot) => {
             const isSelected = selectedSlot?.time === slot.time;
@@ -272,6 +300,7 @@ export function CourtSchedulePage({
             );
           })}
         </div>
+        )}
       </div>
 
       {/* Bottom CTA bar */}

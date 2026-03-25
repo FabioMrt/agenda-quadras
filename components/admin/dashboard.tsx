@@ -51,6 +51,7 @@ interface Props {
     occupancyRate: number;
   };
   todayBookings: BookingItem[];
+  pendingBookings: BookingItem[];
 }
 
 function formatDateBR(dateStr: string) {
@@ -125,6 +126,8 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
     }
   };
 
+  const showDate = booking.date !== new Date().toISOString().split("T")[0];
+
   return (
     <div className="px-5 py-4">
       <div className="flex items-center gap-4">
@@ -132,6 +135,11 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
           <Clock size={16} className="text-arena-text-muted" />
         </div>
         <div className="flex-1 min-w-0">
+          {showDate && (
+            <p className="text-arena-gold text-[0.625rem] font-heading font-semibold mb-0.5">
+              {formatDateBR(booking.date)}
+            </p>
+          )}
           <div className="flex items-center gap-2">
             <p className="text-white text-sm font-semibold truncate">
               {booking.startTime} – {booking.endTime}
@@ -222,9 +230,10 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
   );
 }
 
-export function AdminDashboardClient({ stats, todayBookings: initialBookings }: Props) {
+export function AdminDashboardClient({ stats, todayBookings: initialBookings, pendingBookings: initialPending }: Props) {
   const router = useRouter();
   const [bookings, setBookings] = useState(initialBookings);
+  const [pending, setPending] = useState(initialPending);
 
   const statCards = [
     { label: "Reservas Hoje", value: stats.todayBookings, icon: CalendarCheck, accent: true },
@@ -239,6 +248,7 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings }: 
         b.id === id ? { ...b, status: newStatus as BookingItem["status"] } : b
       )
     );
+    setPending((prev) => prev.filter((b) => b.id !== id));
     router.refresh();
   };
 
@@ -287,6 +297,32 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings }: 
           </div>
         ))}
       </div>
+
+      {/* Pending Bookings (all dates) */}
+      {pending.length > 0 && (
+        <div className="bg-arena-gold/5 rounded-2xl border border-arena-gold/20 overflow-hidden mb-6">
+          <div className="flex items-center justify-between px-5 py-4 border-b border-arena-gold/15">
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-arena-gold animate-pulse" />
+              <h2 className="font-heading font-bold text-arena-gold text-sm tracking-tight">
+                Aguardando Confirmacao
+              </h2>
+            </div>
+            <span className="text-arena-gold/70 text-xs font-heading">
+              {pending.length} pendentes
+            </span>
+          </div>
+          <div className="divide-y divide-arena-gold/10">
+            {pending.map((booking) => (
+              <BookingRow
+                key={booking.id}
+                booking={booking}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Today's Bookings */}
       <div className="bg-arena-surface rounded-2xl border border-arena-border overflow-hidden">

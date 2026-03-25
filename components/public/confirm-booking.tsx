@@ -36,6 +36,7 @@ export function ConfirmBookingPage({
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [bookingId, setBookingId] = useState("");
 
   const handlePhoneChange = (val: string) => {
     const digits = val.replace(/\D/g, "");
@@ -78,11 +79,15 @@ export function ConfirmBookingPage({
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || "Erro ao criar reserva");
+        const msg = res.status === 409
+          ? "Este horario acabou de ser reservado por outra pessoa. Escolha outro."
+          : data.error || "Erro ao criar reserva";
+        setError(msg);
         setLoading(false);
         return;
       }
 
+      setBookingId(data.booking?.id?.slice(-8)?.toUpperCase() || "");
       setStep("success");
     } catch {
       setError("Erro de conexao. Tente novamente.");
@@ -204,7 +209,16 @@ export function ConfirmBookingPage({
               foi solicitada. Voce sera contatado via WhatsApp.
             </p>
 
-            <div className="bg-arena-surface rounded-2xl p-4 w-full mt-6 border border-arena-border text-left">
+            {bookingId && (
+              <div className="bg-arena-accent-dim/30 rounded-xl px-4 py-2 mt-4 border border-arena-accent/15">
+                <span className="text-arena-text-muted text-xs">Codigo: </span>
+                <span className="text-arena-accent font-heading font-bold text-xs tracking-wider">
+                  #{bookingId}
+                </span>
+              </div>
+            )}
+
+            <div className="bg-arena-surface rounded-2xl p-4 w-full mt-4 border border-arena-border text-left">
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <span className="text-arena-text-muted text-sm">Nome</span>

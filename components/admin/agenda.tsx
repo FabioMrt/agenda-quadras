@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -8,6 +8,8 @@ import {
   X,
   Loader2,
   AlertCircle,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 interface DaySchedule {
@@ -36,6 +38,8 @@ interface ManualBookingForm {
 export function AgendaClient({ initialWeekData, courts }: Props) {
   const router = useRouter();
   const [weekData, setWeekData] = useState(initialWeekData);
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [weekLoading, setWeekLoading] = useState(false);
   const [selectedCourt, setSelectedCourt] = useState<string | undefined>(
     undefined
   );
@@ -49,10 +53,38 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
   const hours = Array.from({ length: 16 }, (_, i) => i + 7);
   const today = new Date().toISOString().split("T")[0];
 
+  const fetchWeek = useCallback(async (offset: number) => {
+    setWeekLoading(true);
+    try {
+      const res = await fetch(`/api/admin/agenda?week=${offset}`);
+      const json = await res.json();
+      if (json.data) setWeekData(json.data);
+    } finally {
+      setWeekLoading(false);
+    }
+  }, []);
+
+  const handleWeekChange = (direction: number) => {
+    const newOffset = weekOffset + direction;
+    setWeekOffset(newOffset);
+    setManualForm(null);
+    fetchWeek(newOffset);
+  };
+
+  const weekLabel =
+    weekOffset === 0
+      ? "Esta Semana"
+      : weekOffset === 1
+        ? "Proxima Semana"
+        : weekOffset === -1
+          ? "Semana Passada"
+          : `${weekOffset > 0 ? "+" : ""}${weekOffset} semanas`;
+
   const handleSlotClick = (date: string, time: string) => {
-    const courtId = selectedCourt || courts[0]?.id;
-    const courtName =
-      courts.find((c) => c.id === courtId)?.name || courts[0]?.name || "";
+    const courtId = selectedCourt || "";
+    const courtName = selectedCourt
+      ? courts.find((c) => c.id === selectedCourt)?.name || ""
+      : "";
     setManualForm({ date, time, courtId, courtName });
     setGuestName("");
     setGuestPhone("");
@@ -183,6 +215,25 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
         ))}
       </div>
 
+      {/* Week navigation */}
+      <div className="flex items-center justify-between mb-4">
+        <button
+          onClick={() => handleWeekChange(-1)}
+          className="w-8 h-8 rounded-lg bg-white/4 border border-arena-border flex items-center justify-center hover:bg-white/8 transition-colors"
+        >
+          <ChevronLeft size={16} className="text-arena-text-secondary" />
+        </button>
+        <span className="text-white font-heading font-semibold text-sm">
+          {weekLoading ? "Carregando..." : weekLabel}
+        </span>
+        <button
+          onClick={() => handleWeekChange(1)}
+          className="w-8 h-8 rounded-lg bg-white/4 border border-arena-border flex items-center justify-center hover:bg-white/8 transition-colors"
+        >
+          <ChevronRight size={16} className="text-arena-text-secondary" />
+        </button>
+      </div>
+
       {/* Manual booking form (bottom sheet style) */}
       {manualForm && (
         <div className="bg-arena-surface rounded-2xl border border-arena-accent/20 p-5 mb-6">
@@ -211,6 +262,36 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
           )}
 
           <div className="space-y-3">
+            {/* Court selector (when no court is filtered) */}
+            {!manualForm.courtId && (
+              <div>
+                <label className="text-arena-text-secondary text-[0.625rem] font-heading font-semibold mb-1.5 block uppercase tracking-wider">
+                  Quadra *
+                </label>
+                <div className="flex gap-2 flex-wrap">
+                  {courts.map((court) => (
+                    <button
+                      key={court.id}
+                      type="button"
+                      onClick={() =>
+                        setManualForm((prev) =>
+                          prev
+                            ? { ...prev, courtId: court.id, courtName: court.name }
+                            : prev
+                        )
+                      }
+                      className={`text-xs font-heading font-semibold tracking-wide px-3 py-2 rounded-xl transition-all ${
+                        manualForm.courtId === court.id
+                          ? "bg-arena-accent text-arena-bg"
+                          : "bg-white/4 border border-arena-border text-arena-text-secondary"
+                      }`}
+                    >
+                      {court.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <div>
               <label className="text-arena-text-secondary text-[0.625rem] font-heading font-semibold mb-1.5 block uppercase tracking-wider">
                 Nome do cliente (opcional)
@@ -251,7 +332,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
 
           <button
             onClick={handleCreateManual}
-            disabled={loading}
+            disabled={loading || !manualForm.courtId}
             className="mt-4 w-full bg-arena-accent disabled:bg-arena-accent/30 text-arena-bg font-heading font-bold text-xs tracking-wide rounded-xl py-3 glow-accent active:scale-[0.97] transition-all flex items-center justify-center gap-1.5"
           >
             {loading ? (
