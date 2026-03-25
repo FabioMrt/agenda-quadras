@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { SessionProvider, signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -101,10 +101,11 @@ export default function AdminLayout({
 
   // Don't apply layout to login page
   if (pathname === "/admin/login") {
-    return <>{children}</>;
+    return <SessionProvider>{children}</SessionProvider>;
   }
 
   return (
+    <SessionProvider>
     <div className="min-h-screen bg-arena-bg flex">
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex w-[240px] flex-col bg-arena-surface border-r border-arena-border shrink-0 fixed inset-y-0 left-0 z-30">
@@ -147,5 +148,6 @@ export default function AdminLayout({
         <main className="px-5 py-6 md:px-8 md:py-8">{children}</main>
       </div>
     </div>
+    </SessionProvider>
   );
 }
