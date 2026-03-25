@@ -18,7 +18,7 @@ export default async function AdminDashboard() {
   const bookings = todayBookings.map((b) => ({
     id: b.id,
     courtName: b.court.name,
-    customerName: b.user.name ?? b.user.email ?? "Usuario",
+    customerName: b.guestName ?? b.user?.name ?? b.user?.email ?? "Usuario",
     startTime: b.startTime,
     endTime: b.endTime,
     totalPrice: b.totalPrice,

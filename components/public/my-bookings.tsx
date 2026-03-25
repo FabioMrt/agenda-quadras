@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
@@ -9,10 +9,10 @@ import {
   MapPin,
   CalendarX,
   Search,
+  Phone,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Booking, BookingStatus } from "@/lib/types";
-import { getMockBookings } from "@/lib/data/mock-data";
+import type { BookingStatus } from "@/lib/types";
 
 const STATUS_CONFIG: Record<
   BookingStatus,
@@ -32,8 +32,22 @@ const STATUS_CONFIG: Record<
   },
 };
 
-function BookingCard({ booking }: { booking: Booking }) {
-  const router = useRouter();
+interface BookingItem {
+  id: string;
+  courtName: string;
+  courtType: string;
+  companyName: string;
+  companySlug: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  totalPrice: number;
+  status: BookingStatus;
+}
+
+function BookingCard({ booking }: { booking: BookingItem }) {
+  const isPast = new Date(booking.date + "T23:59:59") < new Date();
+  const config = STATUS_CONFIG[booking.status];
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr + "T00:00:00");
@@ -43,9 +57,6 @@ function BookingCard({ booking }: { booking: Booking }) {
       month: "short",
     });
   };
-
-  const isPast = new Date(booking.date + "T23:59:59") < new Date();
-  const config = STATUS_CONFIG[booking.status];
 
   return (
     <div
@@ -101,8 +112,87 @@ function BookingCard({ booking }: { booking: Booking }) {
 
 export function MyBookingsPage() {
   const router = useRouter();
-  const bookings = getMockBookings();
+  const searchParams = useSearchParams();
+  const phoneParam = searchParams.get("phone") || "";
+
+  const [phone, setPhone] = useState(phoneParam);
+  const [searchPhone, setSearchPhone] = useState(phoneParam);
+  const [bookings, setBookings] = useState<BookingItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [searched, setSearched] = useState(!!phoneParam);
   const [filter, setFilter] = useState<BookingStatus | "ALL">("ALL");
+
+  const handlePhoneChange = (val: string) => {
+    const digits = val.replace(/\D/g, "");
+    let formatted = digits;
+    if (digits.length <= 11) {
+      if (digits.length > 6) {
+        formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+      } else if (digits.length > 2) {
+        formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+      } else if (digits.length > 0) {
+        formatted = `(${digits}`;
+      }
+    }
+    setPhone(formatted);
+  };
+
+  const fetchBookings = async (phoneDigits: string) => {
+    if (phoneDigits.length < 10) return;
+    setLoading(true);
+    setSearched(true);
+
+    try {
+      const res = await fetch(`/api/bookings?phone=${phoneDigits}`);
+      const data = await res.json();
+
+      const items: BookingItem[] = (data.bookings || []).map(
+        (b: {
+          id: string;
+          date: string;
+          startTime: string;
+          endTime: string;
+          totalPrice: number;
+          status: BookingStatus;
+          court: {
+            name: string;
+            company: { name: string; slug: string };
+            courtType: { name: string };
+          };
+        }) => ({
+          id: b.id,
+          courtName: b.court.name,
+          courtType: b.court.courtType.name,
+          companyName: b.court.company.name,
+          companySlug: b.court.company.slug,
+          date: b.date.split("T")[0],
+          startTime: b.startTime,
+          endTime: b.endTime,
+          totalPrice: b.totalPrice,
+          status: b.status,
+        })
+      );
+
+      setBookings(items);
+    } catch {
+      setBookings([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (phoneParam && phoneParam.length >= 10) {
+      setSearchPhone(phoneParam);
+      fetchBookings(phoneParam);
+    }
+  }, [phoneParam]);
+
+  const handleSearch = () => {
+    const digits = phone.replace(/\D/g, "");
+    setSearchPhone(digits);
+    fetchBookings(digits);
+  };
 
   const filtered =
     filter === "ALL" ? bookings : bookings.filter((b) => b.status === filter);
@@ -129,81 +219,123 @@ export function MyBookingsPage() {
         </h1>
       </div>
 
-      {/* Filter tabs */}
-      <div className="flex gap-2 px-5 mb-6 no-scrollbar overflow-x-auto">
-        {[
-          { key: "ALL" as const, label: "Todos" },
-          { key: "CONFIRMED" as const, label: "Confirmados" },
-          { key: "PENDING" as const, label: "Pendentes" },
-          { key: "CANCELLED" as const, label: "Cancelados" },
-        ].map(({ key, label }) => (
+      {/* Phone search */}
+      <div className="px-5 mb-6">
+        <label className="text-arena-text-secondary text-xs font-heading font-semibold mb-2 block uppercase tracking-wider">
+          Buscar por WhatsApp
+        </label>
+        <div className="flex gap-2">
+          <div className="flex-1 relative">
+            <Phone
+              size={16}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-arena-text-muted"
+            />
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => handlePhoneChange(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              placeholder="(11) 99999-9999"
+              className="w-full bg-white/4 border border-arena-border-strong rounded-xl pl-11 pr-4 py-3 text-white text-sm font-medium placeholder:text-arena-text-muted/60 focus:outline-none focus:border-arena-accent/40 focus:ring-1 focus:ring-arena-accent/20 transition-all"
+            />
+          </div>
           <button
-            key={key}
-            onClick={() => setFilter(key)}
-            className={`text-xs font-heading font-semibold tracking-wide px-4 py-2 rounded-full transition-all whitespace-nowrap ${
-              filter === key
-                ? "bg-arena-accent text-arena-bg"
-                : "bg-white/4 border border-arena-border text-arena-text-secondary"
-            }`}
+            onClick={handleSearch}
+            disabled={phone.replace(/\D/g, "").length < 10}
+            className="bg-arena-accent disabled:bg-arena-accent/30 text-arena-bg rounded-xl px-5 py-3 active:scale-95 transition-all font-heading font-bold text-sm"
           >
-            {label}
+            Buscar
           </button>
-        ))}
+        </div>
       </div>
 
-      <div className="px-5">
-        {filtered.length === 0 ? (
-          /* Empty state */
-          <div className="flex flex-col items-center justify-center text-center py-20">
-            <div className="w-20 h-20 rounded-full bg-arena-surface flex items-center justify-center mb-5">
-              <CalendarX size={36} className="text-arena-text-muted" />
+      {!searched ? (
+        <div className="flex flex-col items-center justify-center text-center py-16 px-5">
+          <div className="w-20 h-20 rounded-full bg-arena-surface flex items-center justify-center mb-5">
+            <Search size={36} className="text-arena-text-muted" />
+          </div>
+          <h2 className="font-heading font-bold text-white text-lg tracking-tight">
+            Digite seu WhatsApp
+          </h2>
+          <p className="text-arena-text-muted text-sm mt-2 max-w-[260px]">
+            Informe o numero usado na reserva para ver seus agendamentos.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Filter tabs */}
+          {bookings.length > 0 && (
+            <div className="flex gap-2 px-5 mb-6 no-scrollbar overflow-x-auto">
+              {[
+                { key: "ALL" as const, label: "Todos" },
+                { key: "CONFIRMED" as const, label: "Confirmados" },
+                { key: "PENDING" as const, label: "Pendentes" },
+                { key: "CANCELLED" as const, label: "Cancelados" },
+              ].map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setFilter(key)}
+                  className={`text-xs font-heading font-semibold tracking-wide px-4 py-2 rounded-full transition-all whitespace-nowrap ${
+                    filter === key
+                      ? "bg-arena-accent text-arena-bg"
+                      : "bg-white/4 border border-arena-border text-arena-text-secondary"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
-            <h2 className="font-heading font-bold text-white text-lg tracking-tight">
-              Nenhum agendamento
-            </h2>
-            <p className="text-arena-text-muted text-sm mt-2 max-w-[260px]">
-              Voce ainda nao fez nenhuma reserva. Que tal agendar uma quadra?
-            </p>
-            <button
-              onClick={() => router.push("/arena-elite")}
-              className="mt-6 bg-arena-accent text-arena-bg font-heading font-bold tracking-wide rounded-2xl px-8 py-3.5 glow-accent active:scale-[0.97] transition-transform flex items-center gap-2"
-            >
-              <Search size={16} />
-              Encontrar Quadras
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {/* Upcoming */}
-            {upcoming.length > 0 && (
-              <div>
-                <h2 className="font-heading text-sm font-semibold text-arena-text-secondary uppercase tracking-wider mb-3">
-                  Proximos
-                </h2>
-                <div className="space-y-3">
-                  {upcoming.map((b) => (
-                    <BookingCard key={b.id} booking={b} />
-                  ))}
-                </div>
-              </div>
-            )}
+          )}
 
-            {/* Past */}
-            {past.length > 0 && (
-              <div>
-                <h2 className="font-heading text-sm font-semibold text-arena-text-secondary uppercase tracking-wider mb-3">
-                  Anteriores
-                </h2>
-                <div className="space-y-3">
-                  {past.map((b) => (
-                    <BookingCard key={b.id} booking={b} />
-                  ))}
+          <div className="px-5">
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-2 border-arena-accent border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center py-16">
+                <div className="w-20 h-20 rounded-full bg-arena-surface flex items-center justify-center mb-5">
+                  <CalendarX size={36} className="text-arena-text-muted" />
                 </div>
+                <h2 className="font-heading font-bold text-white text-lg tracking-tight">
+                  Nenhum agendamento
+                </h2>
+                <p className="text-arena-text-muted text-sm mt-2 max-w-[260px]">
+                  Nao encontramos reservas para este numero.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                {upcoming.length > 0 && (
+                  <div>
+                    <h2 className="font-heading text-sm font-semibold text-arena-text-secondary uppercase tracking-wider mb-3">
+                      Proximos
+                    </h2>
+                    <div className="space-y-3">
+                      {upcoming.map((b) => (
+                        <BookingCard key={b.id} booking={b} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {past.length > 0 && (
+                  <div>
+                    <h2 className="font-heading text-sm font-semibold text-arena-text-secondary uppercase tracking-wider mb-3">
+                      Anteriores
+                    </h2>
+                    <div className="space-y-3">
+                      {past.map((b) => (
+                        <BookingCard key={b.id} booking={b} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

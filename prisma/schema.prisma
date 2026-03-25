@@ -156,7 +156,9 @@ model BlockedSlot {
 model Booking {
   id         String        @id @default(cuid())
   courtId    String
-  userId     String
+  userId     String?
+  guestName  String?
+  guestPhone String?
   date       DateTime      @db.Date
   startTime  String
   endTime    String
@@ -165,7 +167,7 @@ model Booking {
   createdAt  DateTime      @default(now())
 
   court   Court   @relation(fields: [courtId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  user    User?   @relation(fields: [userId], references: [id])
   payment Payment?
 }
 

@@ -119,7 +119,7 @@ export async function getWeekBookings(companyId: string, weekOffset: number = 0)
       .map((b) => ({
         time: b.startTime,
         courtName: b.court.name,
-        customerName: b.user.name ?? "Usuario",
+        customerName: b.guestName ?? b.user?.name ?? "Usuario",
       }));
 
     days.push({
