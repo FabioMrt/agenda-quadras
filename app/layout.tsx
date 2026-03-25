@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Sora, Plus_Jakarta_Sans } from "next/font/google";
+import { Providers } from "@/components/providers";
 import "./globals.css";
 
 const sora = Sora({
@@ -36,7 +37,7 @@ export default function RootLayout({
     <html lang="pt-BR" className={`${sora.variable} ${jakarta.variable} dark`}>
       <body suppressHydrationWarning className="min-h-screen bg-arena-bg font-body antialiased text-white">
         <div className="noise" />
-        {children}
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

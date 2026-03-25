@@ -2,17 +2,36 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { LogIn } from "lucide-react";
+import { signIn } from "next-auth/react";
+import { LogIn, AlertCircle, Loader2 } from "lucide-react";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Placeholder — will integrate with Auth.js
+    setError("");
+    setLoading(true);
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    setLoading(false);
+
+    if (result?.error) {
+      setError("Email ou senha incorretos");
+      return;
+    }
+
     router.push("/admin");
+    router.refresh();
   };
 
   return (
@@ -33,6 +52,14 @@ export default function AdminLoginPage() {
           </p>
         </div>
 
+        {/* Error */}
+        {error && (
+          <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 mb-4">
+            <AlertCircle size={16} className="text-red-400 shrink-0" />
+            <span className="text-red-400 text-sm font-medium">{error}</span>
+          </div>
+        )}
+
         {/* Form */}
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
@@ -44,6 +71,7 @@ export default function AdminLoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="admin@arena.com"
+              required
               className="w-full bg-white/4 border border-arena-border-strong rounded-xl px-4 py-3.5 text-white text-sm font-medium placeholder:text-arena-text-muted/60 focus:outline-none focus:border-arena-accent/40 focus:ring-1 focus:ring-arena-accent/20 transition-all"
             />
           </div>
@@ -56,16 +84,22 @@ export default function AdminLoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
+              required
               className="w-full bg-white/4 border border-arena-border-strong rounded-xl px-4 py-3.5 text-white text-sm font-medium placeholder:text-arena-text-muted/60 focus:outline-none focus:border-arena-accent/40 focus:ring-1 focus:ring-arena-accent/20 transition-all"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-arena-accent text-arena-bg font-heading font-bold tracking-wide rounded-2xl py-4 glow-accent active:scale-[0.97] transition-transform flex items-center justify-center gap-2 mt-6"
+            disabled={loading}
+            className="w-full bg-arena-accent disabled:bg-arena-accent/50 text-arena-bg font-heading font-bold tracking-wide rounded-2xl py-4 glow-accent active:scale-[0.97] transition-all flex items-center justify-center gap-2 mt-6"
           >
-            <LogIn size={18} />
-            Entrar
+            {loading ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <LogIn size={18} />
+            )}
+            {loading ? "Entrando..." : "Entrar"}
           </button>
         </form>
       </div>

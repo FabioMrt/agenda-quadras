@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
   LayoutDashboard,
   CalendarDays,
@@ -78,7 +79,10 @@ function SidebarContent({
 
       {/* Footer */}
       <div className="px-3 pb-6">
-        <button className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-arena-text-muted hover:text-red-400 hover:bg-red-500/10 transition-all w-full">
+        <button
+          onClick={() => signOut({ callbackUrl: "/admin/login" })}
+          className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-arena-text-muted hover:text-red-400 hover:bg-red-500/10 transition-all w-full"
+        >
           <LogOut size={18} />
           <span className="font-heading tracking-wide">Sair</span>
         </button>
