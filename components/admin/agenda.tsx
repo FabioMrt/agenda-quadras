@@ -1,7 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+  User,
+  Plus,
+  X,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 
 interface DaySchedule {
   date: string;
@@ -19,14 +26,122 @@ interface Props {
   courts: { id: string; name: string }[];
 }
 
+interface ManualBookingForm {
+  date: string;
+  time: string;
+  courtId: string;
+  courtName: string;
+}
+
 export function AgendaClient({ initialWeekData, courts }: Props) {
-  const [weekData] = useState(initialWeekData);
+  const router = useRouter();
+  const [weekData, setWeekData] = useState(initialWeekData);
   const [selectedCourt, setSelectedCourt] = useState<string | undefined>(
     undefined
   );
+  const [manualForm, setManualForm] = useState<ManualBookingForm | null>(null);
+  const [guestName, setGuestName] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const hours = Array.from({ length: 16 }, (_, i) => i + 7);
   const today = new Date().toISOString().split("T")[0];
+
+  const handleSlotClick = (date: string, time: string) => {
+    const courtId = selectedCourt || courts[0]?.id;
+    const courtName =
+      courts.find((c) => c.id === courtId)?.name || courts[0]?.name || "";
+    setManualForm({ date, time, courtId, courtName });
+    setGuestName("");
+    setGuestPhone("");
+    setNotes("");
+    setError("");
+  };
+
+  const handlePhoneChange = (val: string) => {
+    const digits = val.replace(/\D/g, "");
+    let formatted = digits;
+    if (digits.length <= 11) {
+      if (digits.length > 6) {
+        formatted = `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+      } else if (digits.length > 2) {
+        formatted = `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+      } else if (digits.length > 0) {
+        formatted = `(${digits}`;
+      }
+    }
+    setGuestPhone(formatted);
+  };
+
+  const handleCreateManual = async () => {
+    if (!manualForm) return;
+    setError("");
+    setLoading(true);
+
+    const endHour = (parseInt(manualForm.time) + 1).toString().padStart(2, "0");
+    const endTime = `${endHour}:00`;
+
+    try {
+      const res = await fetch("/api/bookings/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          courtId: manualForm.courtId,
+          date: manualForm.date,
+          startTime: manualForm.time,
+          endTime,
+          guestName: guestName.trim() || notes.trim() || "Reserva manual",
+          guestPhone: guestPhone.replace(/\D/g, "") || null,
+          notes: notes.trim() || null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Erro ao criar reserva");
+        setLoading(false);
+        return;
+      }
+
+      // Update local state
+      setWeekData((prev) =>
+        prev.map((day) =>
+          day.date === manualForm.date
+            ? {
+                ...day,
+                bookings: [
+                  ...day.bookings,
+                  {
+                    time: manualForm.time,
+                    courtName: manualForm.courtName,
+                    customerName: guestName.trim() || notes.trim() || "Manual",
+                  },
+                ],
+              }
+            : day
+        )
+      );
+
+      setManualForm(null);
+      router.refresh();
+    } catch {
+      setError("Erro de conexao");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDateBR = (dateStr: string) => {
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("pt-BR", {
+      weekday: "short",
+      day: "2-digit",
+      month: "2-digit",
+    });
+  };
 
   return (
     <div>
@@ -36,7 +151,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
             Agenda
           </h1>
           <p className="text-arena-text-muted text-sm">
-            Visualize e gerencie suas reservas
+            Clique num horario livre para reservar manualmente
           </p>
         </div>
       </div>
@@ -67,6 +182,87 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
           </button>
         ))}
       </div>
+
+      {/* Manual booking form (bottom sheet style) */}
+      {manualForm && (
+        <div className="bg-arena-surface rounded-2xl border border-arena-accent/20 p-5 mb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="font-heading font-bold text-white text-sm tracking-tight">
+                Reserva Manual
+              </h3>
+              <p className="text-arena-text-muted text-xs mt-0.5">
+                {manualForm.courtName} · {formatDateBR(manualForm.date)} · {manualForm.time}
+              </p>
+            </div>
+            <button
+              onClick={() => setManualForm(null)}
+              className="w-7 h-7 rounded-lg bg-white/4 flex items-center justify-center"
+            >
+              <X size={14} className="text-arena-text-muted" />
+            </button>
+          </div>
+
+          {error && (
+            <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2 mb-3">
+              <AlertCircle size={14} className="text-red-400 shrink-0" />
+              <span className="text-red-400 text-xs font-medium">{error}</span>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-arena-text-secondary text-[0.625rem] font-heading font-semibold mb-1.5 block uppercase tracking-wider">
+                Nome do cliente (opcional)
+              </label>
+              <input
+                type="text"
+                value={guestName}
+                onChange={(e) => setGuestName(e.target.value)}
+                placeholder="Ex: Joao Silva"
+                className="w-full bg-white/4 border border-arena-border-strong rounded-xl px-3 py-2.5 text-white text-xs placeholder:text-arena-text-muted/60 focus:outline-none focus:border-arena-accent/40 transition-all"
+              />
+            </div>
+            <div>
+              <label className="text-arena-text-secondary text-[0.625rem] font-heading font-semibold mb-1.5 block uppercase tracking-wider">
+                WhatsApp (opcional)
+              </label>
+              <input
+                type="tel"
+                value={guestPhone}
+                onChange={(e) => handlePhoneChange(e.target.value)}
+                placeholder="(11) 99999-9999"
+                className="w-full bg-white/4 border border-arena-border-strong rounded-xl px-3 py-2.5 text-white text-xs placeholder:text-arena-text-muted/60 focus:outline-none focus:border-arena-accent/40 transition-all"
+              />
+            </div>
+            <div>
+              <label className="text-arena-text-secondary text-[0.625rem] font-heading font-semibold mb-1.5 block uppercase tracking-wider">
+                Observacao (opcional)
+              </label>
+              <input
+                type="text"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Ex: Pelada do trabalho, Aula particular..."
+                className="w-full bg-white/4 border border-arena-border-strong rounded-xl px-3 py-2.5 text-white text-xs placeholder:text-arena-text-muted/60 focus:outline-none focus:border-arena-accent/40 transition-all"
+              />
+            </div>
+          </div>
+
+          <button
+            onClick={handleCreateManual}
+            disabled={loading}
+            className="mt-4 w-full bg-arena-accent disabled:bg-arena-accent/30 text-arena-bg font-heading font-bold text-xs tracking-wide rounded-xl py-3 glow-accent active:scale-[0.97] transition-all flex items-center justify-center gap-1.5"
+          >
+            {loading ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Plus size={14} />
+            )}
+            {loading ? "Criando..." : "Criar Reserva"}
+          </button>
+        </div>
+      )}
 
       {/* Calendar grid */}
       <div className="bg-arena-surface rounded-2xl border border-arena-border overflow-hidden">
@@ -117,15 +313,14 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                 {weekData.map(({ date, bookings }) => {
                   const booking = bookings.find((b) => {
                     if (selectedCourt) {
-                      // Find by court name since we filter client-side
                       const court = courts.find((c) => c.id === selectedCourt);
-                      return (
-                        b.time === timeStr &&
-                        b.courtName === court?.name
-                      );
+                      return b.time === timeStr && b.courtName === court?.name;
                     }
                     return b.time === timeStr;
                   });
+
+                  const isSelected =
+                    manualForm?.date === date && manualForm?.time === timeStr;
 
                   return (
                     <div
@@ -143,7 +338,18 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                           </span>
                         </div>
                       ) : (
-                        <div className="h-full rounded-lg hover:bg-white/4 transition-colors cursor-pointer" />
+                        <button
+                          onClick={() => handleSlotClick(date, timeStr)}
+                          className={`w-full h-full rounded-lg transition-colors flex items-center justify-center ${
+                            isSelected
+                              ? "bg-arena-accent/20 border border-arena-accent/40"
+                              : "hover:bg-white/4 cursor-pointer"
+                          }`}
+                        >
+                          {isSelected && (
+                            <Plus size={10} className="text-arena-accent" />
+                          )}
+                        </button>
                       )}
                     </div>
                   );
@@ -165,7 +371,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-transparent border border-arena-border" />
           <span className="text-arena-text-muted text-xs font-medium">
-            Livre
+            Livre (clique para reservar)
           </span>
         </div>
       </div>
