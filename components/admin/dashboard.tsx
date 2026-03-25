@@ -63,13 +63,11 @@ function formatDateBR(dateStr: string) {
   });
 }
 
-function openWhatsApp(phone: string, message: string) {
+function getWhatsAppUrl(phone: string, message: string): string | null {
   const digits = phone.replace(/\D/g, "");
+  if (!digits || digits.length < 10) return null;
   const fullNumber = digits.length <= 11 ? `55${digits}` : digits;
-  window.open(
-    `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`,
-    "_blank"
-  );
+  return `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`;
 }
 
 function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatusChange: (id: string, status: string) => void }) {
@@ -94,7 +92,8 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
           `Horario: ${booking.startTime} - ${booking.endTime}\n` +
           `Valor: R$ ${booking.totalPrice},00\n\n` +
           `O pagamento e feito no local. Te esperamos! ⚽`;
-        openWhatsApp(booking.customerPhone, msg);
+        const url = getWhatsAppUrl(booking.customerPhone, msg);
+        if (url) window.location.href = url;
       }
     } finally {
       setLoading(null);
@@ -118,7 +117,8 @@ function BookingRow({ booking, onStatusChange }: { booking: BookingItem; onStatu
           `Horario: ${booking.startTime} - ${booking.endTime}\n\n` +
           `Motivo: ${cancelReason}\n\n` +
           `Pedimos desculpas pelo inconveniente. Entre em contato para reagendar.`;
-        openWhatsApp(booking.customerPhone, msg);
+        const url = getWhatsAppUrl(booking.customerPhone, msg);
+        if (url) window.location.href = url;
         setShowCancelForm(false);
       }
     } finally {

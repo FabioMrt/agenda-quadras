@@ -10,17 +10,30 @@ import {
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  Phone,
+  MapPin,
+  Calendar,
+  DollarSign,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+
+interface BookingDetail {
+  id: string;
+  time: string;
+  endTime: string;
+  courtName: string;
+  customerName: string;
+  customerPhone: string;
+  totalPrice: number;
+  status: string;
+}
 
 interface DaySchedule {
   date: string;
   dayName: string;
   dayNumber: number;
-  bookings: {
-    time: string;
-    courtName: string;
-    customerName: string;
-  }[];
+  bookings: BookingDetail[];
 }
 
 interface Props {
@@ -49,9 +62,50 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
   const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [selectedBooking, setSelectedBooking] = useState<{ booking: BookingDetail; date: string } | null>(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [cancelLoading, setCancelLoading] = useState(false);
 
   const hours = Array.from({ length: 16 }, (_, i) => i + 7);
   const today = new Date().toISOString().split("T")[0];
+
+  const handleCancelBooking = async () => {
+    if (!selectedBooking || !cancelReason.trim()) return;
+    setCancelLoading(true);
+    try {
+      const res = await fetch(`/api/bookings/${selectedBooking.booking.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "CANCELLED" }),
+      });
+      if (res.ok) {
+        setWeekData((prev) =>
+          prev.map((day) => ({
+            ...day,
+            bookings: day.bookings.filter((b) => b.id !== selectedBooking.booking.id),
+          }))
+        );
+        // Open WhatsApp if phone exists
+        if (selectedBooking.booking.customerPhone) {
+          const d = new Date(selectedBooking.date + "T00:00:00");
+          const dateStr = d.toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "2-digit" });
+          const msg = `Ola ${selectedBooking.booking.customerName}, sua reserva foi *cancelada*:\n\n` +
+            `*${selectedBooking.booking.courtName}*\n` +
+            `Data: ${dateStr}\n` +
+            `Horario: ${selectedBooking.booking.time} - ${selectedBooking.booking.endTime}\n\n` +
+            `Motivo: ${cancelReason}\n\nEntre em contato para reagendar.`;
+          const digits = selectedBooking.booking.customerPhone.replace(/\D/g, "");
+          const num = digits.length <= 11 ? `55${digits}` : digits;
+          window.location.href = `https://wa.me/${num}?text=${encodeURIComponent(msg)}`;
+        }
+        setSelectedBooking(null);
+        setCancelReason("");
+        router.refresh();
+      }
+    } finally {
+      setCancelLoading(false);
+    }
+  };
 
   const fetchWeek = useCallback(async (offset: number) => {
     setWeekLoading(true);
@@ -139,6 +193,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
       }
 
       // Update local state
+      const endHour = (parseInt(manualForm.time) + 1).toString().padStart(2, "0");
       setWeekData((prev) =>
         prev.map((day) =>
           day.date === manualForm.date
@@ -147,9 +202,14 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                 bookings: [
                   ...day.bookings,
                   {
+                    id: data.booking?.id || "",
                     time: manualForm.time,
+                    endTime: `${endHour}:00`,
                     courtName: manualForm.courtName,
                     customerName: guestName.trim() || notes.trim() || "Manual",
+                    customerPhone: guestPhone.replace(/\D/g, ""),
+                    totalPrice: data.booking?.totalPrice || 0,
+                    status: "CONFIRMED",
                   },
                 ],
               }
@@ -409,7 +469,10 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                       className="p-1 min-h-[40px] border-l border-arena-border/50"
                     >
                       {booking ? (
-                        <div className="bg-arena-accent/15 border border-arena-accent/25 rounded-lg px-1.5 py-1 h-full flex items-center gap-1">
+                        <button
+                          onClick={() => setSelectedBooking({ booking, date })}
+                          className="w-full bg-arena-accent/15 border border-arena-accent/25 rounded-lg px-1.5 py-1 h-full flex items-center gap-1 hover:bg-arena-accent/25 transition-colors text-left"
+                        >
                           <User
                             size={10}
                             className="text-arena-accent shrink-0"
@@ -417,7 +480,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
                           <span className="text-arena-accent text-[0.5625rem] font-medium truncate">
                             {booking.customerName.split(" ")[0]}
                           </span>
-                        </div>
+                        </button>
                       ) : (
                         <button
                           onClick={() => handleSlotClick(date, timeStr)}
@@ -446,16 +509,159 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-arena-accent/15 border border-arena-accent/25" />
           <span className="text-arena-text-muted text-xs font-medium">
-            Reservado
+            Reservado (toque para detalhes)
           </span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-transparent border border-arena-border" />
           <span className="text-arena-text-muted text-xs font-medium">
-            Livre (clique para reservar)
+            Livre (toque para reservar)
           </span>
         </div>
       </div>
+
+      {/* Booking detail dialog */}
+      {selectedBooking && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center"
+          onClick={() => { setSelectedBooking(null); setCancelReason(""); }}
+        >
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div
+            className="relative w-full max-w-md bg-arena-surface rounded-t-3xl sm:rounded-2xl p-6 z-10 border-t sm:border border-arena-border-strong"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-10 h-1 bg-white/15 rounded-full mx-auto mb-5 sm:hidden" />
+
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-heading font-bold text-white text-base tracking-tight">
+                Detalhes da Reserva
+              </h3>
+              <button
+                onClick={() => { setSelectedBooking(null); setCancelReason(""); }}
+                className="w-8 h-8 rounded-full bg-white/6 flex items-center justify-center"
+              >
+                <X size={16} className="text-arena-text-muted" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-arena-accent-dim flex items-center justify-center shrink-0">
+                  <User size={14} className="text-arena-accent" />
+                </div>
+                <div>
+                  <p className="text-white text-sm font-semibold">{selectedBooking.booking.customerName}</p>
+                  {selectedBooking.booking.customerPhone && (
+                    <p className="text-arena-text-muted text-xs flex items-center gap-1">
+                      <Phone size={10} />
+                      {selectedBooking.booking.customerPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-arena-accent-dim flex items-center justify-center shrink-0">
+                  <MapPin size={14} className="text-arena-accent" />
+                </div>
+                <p className="text-white text-sm font-medium">{selectedBooking.booking.courtName}</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-arena-accent-dim flex items-center justify-center shrink-0">
+                  <Calendar size={14} className="text-arena-accent" />
+                </div>
+                <p className="text-white text-sm font-medium">
+                  {new Date(selectedBooking.date + "T00:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" })}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-arena-accent-dim flex items-center justify-center shrink-0">
+                  <Clock size={14} className="text-arena-accent" />
+                </div>
+                <p className="text-white text-sm font-medium">
+                  {selectedBooking.booking.time} – {selectedBooking.booking.endTime}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-arena-accent-dim flex items-center justify-center shrink-0">
+                  <DollarSign size={14} className="text-arena-accent" />
+                </div>
+                <p className="text-arena-accent font-heading font-bold text-sm">
+                  R$ {selectedBooking.booking.totalPrice},00
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Badge
+                  variant="outline"
+                  className="bg-arena-accent/15 text-arena-accent border-arena-accent/30 text-[0.625rem] font-heading font-semibold uppercase tracking-wider px-2 py-0.5"
+                >
+                  {selectedBooking.booking.status === "CONFIRMED" ? "Confirmado" : selectedBooking.booking.status === "PENDING" ? "Pendente" : "Cancelado"}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Cancel action */}
+            <div className="mt-6 pt-4 border-t border-arena-border">
+              {!cancelReason && cancelReason === "" ? (
+                <button
+                  onClick={() => setCancelReason(" ")}
+                  className="w-full flex items-center justify-center gap-2 bg-red-500/10 border border-red-500/20 text-red-400 font-heading font-semibold text-sm rounded-xl py-3 hover:bg-red-500/15 transition-colors"
+                >
+                  <X size={16} />
+                  Cancelar Reserva
+                </button>
+              ) : (
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={cancelReason.trim()}
+                    onChange={(e) => setCancelReason(e.target.value)}
+                    placeholder="Motivo do cancelamento..."
+                    autoFocus
+                    className="w-full bg-white/4 border border-red-500/20 rounded-xl px-4 py-3 text-white text-sm placeholder:text-arena-text-muted/60 focus:outline-none focus:border-red-500/40 transition-all"
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleCancelBooking}
+                      disabled={!cancelReason.trim() || cancelLoading}
+                      className="flex-1 bg-red-500/15 border border-red-500/25 text-red-400 font-heading font-semibold text-xs rounded-xl py-2.5 disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      {cancelLoading ? <Loader2 size={13} className="animate-spin" /> : <X size={13} />}
+                      Confirmar
+                    </button>
+                    <button
+                      onClick={() => setCancelReason("")}
+                      className="px-5 bg-white/4 border border-arena-border text-arena-text-muted font-heading font-semibold text-xs rounded-xl py-2.5"
+                    >
+                      Voltar
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* WhatsApp contact */}
+            {selectedBooking.booking.customerPhone && (
+              <button
+                onClick={() => {
+                  const digits = selectedBooking.booking.customerPhone.replace(/\D/g, "");
+                  const num = digits.length <= 11 ? `55${digits}` : digits;
+                  window.location.href = `https://wa.me/${num}`;
+                }}
+                className="mt-3 w-full flex items-center justify-center gap-2 bg-arena-accent-dim border border-arena-accent/20 text-arena-accent font-heading font-semibold text-sm rounded-xl py-3"
+              >
+                <Phone size={16} />
+                Contatar via WhatsApp
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

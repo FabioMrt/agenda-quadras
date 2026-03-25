@@ -132,9 +132,14 @@ export async function getWeekBookings(companyId: string, weekOffset: number = 0)
     const dayBookings = bookings
       .filter((b) => b.date.toISOString().split("T")[0] === dateStr)
       .map((b) => ({
+        id: b.id,
         time: b.startTime,
+        endTime: b.endTime,
         courtName: b.court.name,
         customerName: b.guestName ?? b.user?.name ?? "Usuario",
+        customerPhone: b.guestPhone ?? "",
+        totalPrice: b.totalPrice,
+        status: b.status as string,
       }));
 
     days.push({

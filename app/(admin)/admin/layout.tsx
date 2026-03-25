@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   BarChart3,
+  Repeat,
   Menu,
   LogOut,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 const NAV_ITEMS = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/admin/recorrentes", label: "Horarios Fixos", icon: Repeat },
   { href: "/admin/relatorios", label: "Relatorios", icon: BarChart3 },
 ];
 
