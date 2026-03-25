@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCourtById } from "@/lib/data/mock-data";
+import { getCourtById } from "@/lib/queries/company";
 import { CourtSchedulePage } from "@/components/public/court-schedule";
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 
 export default async function CourtPage({ params }: Props) {
   const { slug, courtId } = await params;
-  const result = getCourtById(slug, courtId);
+  const result = await getCourtById(slug, courtId);
 
   if (!result) {
     notFound();

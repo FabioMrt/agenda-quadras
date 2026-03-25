@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCompanyBySlug } from "@/lib/data/mock-data";
+import { getCompanyBySlug } from "@/lib/queries/company";
 import { CompanyPage } from "@/components/public/company-page";
 
 interface Props {
@@ -8,7 +8,7 @@ interface Props {
 
 export default async function SlugPage({ params }: Props) {
   const { slug } = await params;
-  const company = getCompanyBySlug(slug);
+  const company = await getCompanyBySlug(slug);
 
   if (!company) {
     notFound();

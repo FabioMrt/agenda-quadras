@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAvailableSlots } from "@/lib/availability";
+import { getAvailableSlots } from "@/lib/queries/availability";
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const slots = await getAvailableSlots(courtId, new Date(date));
+    const slots = await getAvailableSlots(courtId, new Date(date + "T00:00:00"));
 
     return NextResponse.json({ slots });
   } catch {

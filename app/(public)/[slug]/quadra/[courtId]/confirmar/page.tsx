@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getCourtById } from "@/lib/data/mock-data";
+import { getCourtById } from "@/lib/queries/company";
 import { ConfirmBookingPage } from "@/components/public/confirm-booking";
 
 interface Props {
@@ -10,7 +10,7 @@ interface Props {
 export default async function ConfirmarPage({ params, searchParams }: Props) {
   const { slug, courtId } = await params;
   const { date, time, price } = await searchParams;
-  const result = getCourtById(slug, courtId);
+  const result = await getCourtById(slug, courtId);
 
   if (!result || !date || !time || !price) {
     notFound();

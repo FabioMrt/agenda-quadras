@@ -16,7 +16,6 @@ import {
   Company,
   Court,
   TimeSlot,
-  generateTimeSlots,
   getNext7Days,
 } from "@/lib/data/mock-data";
 
@@ -47,6 +46,8 @@ export function CourtSchedulePage({
   const [mounted, setMounted] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<TimeSlot | null>(null);
+  const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const dateScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,9 +55,23 @@ export function CourtSchedulePage({
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!selectedDate || !court.id) return;
+    setLoadingSlots(true);
+    const dateStr = selectedDate.toISOString().split("T")[0];
+    fetch("/api/availability", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ courtId: court.id, date: dateStr }),
+    })
+      .then((r) => r.json())
+      .then((data) => setSlots(data.slots || []))
+      .catch(() => setSlots([]))
+      .finally(() => setLoadingSlots(false));
+  }, [selectedDate, court.id]);
+
   const today = mounted ? new Date() : null;
   const days = mounted ? getNext7Days() : [];
-  const slots = selectedDate ? generateTimeSlots(court.id, selectedDate) : [];
   const availableCount = slots.filter((s) => s.available).length;
 
   const isToday = (day: Date) =>
