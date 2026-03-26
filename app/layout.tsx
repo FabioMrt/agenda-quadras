@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Sora, Plus_Jakarta_Sans } from "next/font/google";
+import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const sora = Sora({
@@ -24,7 +25,6 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#060B18",
 };
 
 export default function RootLayout({
@@ -33,10 +33,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR" className={`${sora.variable} ${jakarta.variable} dark`}>
-      <body suppressHydrationWarning className="min-h-screen bg-arena-bg font-body antialiased text-white">
-        <div className="noise" />
-        {children}
+    <html lang="pt-BR" className={`${sora.variable} ${jakarta.variable}`} suppressHydrationWarning>
+      <body className="min-h-screen bg-arena-bg font-body antialiased overflow-x-hidden">
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <div className="noise" />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

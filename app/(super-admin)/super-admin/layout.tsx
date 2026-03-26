@@ -12,6 +12,7 @@ import {
   Shield,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_ITEMS = [
   { href: "/super-admin", label: "Dashboard", icon: LayoutDashboard },
@@ -75,7 +76,11 @@ function SidebarContent({
       </nav>
 
       {/* Footer */}
-      <div className="px-3 pb-6">
+      <div className="px-3 pb-6 space-y-1">
+        <div className="flex items-center gap-3 px-3 py-2">
+          <ThemeToggle />
+          <span className="text-arena-text-muted text-sm font-heading">Tema</span>
+        </div>
         <button
           onClick={() => signOut({ callbackUrl: "/super-admin/login" })}
           className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-arena-text-muted hover:text-red-400 hover:bg-red-500/10 transition-all w-full"
@@ -109,7 +114,7 @@ export default function SuperAdminLayout({
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 lg:ml-[240px]">
+      <div className="flex-1 lg:ml-[240px] overflow-x-hidden">
         {/* Mobile/Tablet header */}
         <header className="lg:hidden flex items-center justify-between px-5 pt-14 pb-4">
           <div className="flex items-center gap-3">
@@ -138,7 +143,7 @@ export default function SuperAdminLayout({
           </Sheet>
         </header>
 
-        <main className="px-5 py-6 lg:px-8 lg:py-8">{children}</main>
+        <main className="px-4 py-6 lg:px-8 lg:py-8 max-w-full">{children}</main>
       </div>
     </div>
     </SessionProvider>

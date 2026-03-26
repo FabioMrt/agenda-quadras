@@ -103,13 +103,13 @@ export function CourtSchedulePage({
             className="object-cover"
             priority
           />
-          <div className="absolute inset-0 bg-linear-to-t from-arena-bg via-arena-bg/40 to-arena-bg/60" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-black/40" />
         </div>
 
         {/* Back button */}
         <button
           onClick={() => router.back()}
-          className="absolute top-12 left-5 w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center active:scale-95 transition-transform"
+          className="absolute top-12 left-5 w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center active:scale-95 transition-transform"
         >
           <ArrowLeft size={18} className="text-white" />
         </button>

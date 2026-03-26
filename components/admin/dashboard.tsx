@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { WhatsAppConfirmDialog } from "@/components/admin/whatsapp-confirm";
 
 const STATUS_CONFIG = {
   CONFIRMED: {
@@ -66,17 +67,11 @@ function formatDateBR(dateStr: string) {
   });
 }
 
-function getWhatsAppUrl(phone: string, message: string): string | null {
-  const digits = phone.replace(/\D/g, "");
-  if (!digits || digits.length < 10) return null;
-  const fullNumber = digits.length <= 11 ? `55${digits}` : digits;
-  return `https://wa.me/${fullNumber}?text=${encodeURIComponent(message)}`;
-}
-
 function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booking: BookingItem; onStatusChange: (id: string, status: string) => void; alwaysShowDate?: boolean }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
+  const [whatsappDialog, setWhatsappDialog] = useState<{ phone: string; message: string } | null>(null);
   const config = STATUS_CONFIG[booking.status];
 
   const handleConfirm = async () => {
@@ -92,14 +87,15 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booki
         toast.success("Reserva confirmada!", {
           description: `${booking.courtName} · ${booking.startTime} - ${booking.endTime}`,
         });
-        const msg = `Ola ${booking.customerName}! Sua reserva foi *confirmada*:\n\n` +
-          `*${booking.courtName}*\n` +
-          `Data: ${formatDateBR(booking.date)}\n` +
-          `Horario: ${booking.startTime} - ${booking.endTime}\n` +
-          `Valor: R$ ${booking.totalPrice},00\n\n` +
-          `O pagamento e feito no local. Te esperamos! ⚽`;
-        const url = getWhatsAppUrl(booking.customerPhone, msg);
-        if (url) setTimeout(() => { window.location.href = url; }, 1000);
+        if (booking.customerPhone) {
+          const msg = `Ola ${booking.customerName}! Sua reserva foi *confirmada*:\n\n` +
+            `*${booking.courtName}*\n` +
+            `Data: ${formatDateBR(booking.date)}\n` +
+            `Horario: ${booking.startTime} - ${booking.endTime}\n` +
+            `Valor: R$ ${booking.totalPrice},00\n\n` +
+            `O pagamento e feito no local. Te esperamos! ⚽`;
+          setWhatsappDialog({ phone: booking.customerPhone, message: msg });
+        }
       }
     } finally {
       setLoading(null);
@@ -120,14 +116,15 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booki
         toast.error("Reserva cancelada", {
           description: `${booking.courtName} · ${booking.startTime} - ${booking.endTime}`,
         });
-        const msg = `Ola ${booking.customerName}, infelizmente sua reserva foi *cancelada*:\n\n` +
-          `*${booking.courtName}*\n` +
-          `Data: ${formatDateBR(booking.date)}\n` +
-          `Horario: ${booking.startTime} - ${booking.endTime}\n\n` +
-          `Motivo: ${cancelReason}\n\n` +
-          `Pedimos desculpas pelo inconveniente. Entre em contato para reagendar.`;
-        const url = getWhatsAppUrl(booking.customerPhone, msg);
-        if (url) setTimeout(() => { window.location.href = url; }, 1000);
+        if (booking.customerPhone) {
+          const msg = `Ola ${booking.customerName}, infelizmente sua reserva foi *cancelada*:\n\n` +
+            `*${booking.courtName}*\n` +
+            `Data: ${formatDateBR(booking.date)}\n` +
+            `Horario: ${booking.startTime} - ${booking.endTime}\n\n` +
+            `Motivo: ${cancelReason}\n\n` +
+            `Pedimos desculpas pelo inconveniente. Entre em contato para reagendar.`;
+          setWhatsappDialog({ phone: booking.customerPhone, message: msg });
+        }
         setShowCancelForm(false);
       }
     } finally {
@@ -138,6 +135,14 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booki
   const showDate = alwaysShowDate || booking.date !== new Date().toISOString().split("T")[0];
 
   return (
+    <>
+    {whatsappDialog && (
+      <WhatsAppConfirmDialog
+        phone={whatsappDialog.phone}
+        message={whatsappDialog.message}
+        onClose={() => setWhatsappDialog(null)}
+      />
+    )}
     <div className="px-5 py-4">
       <div className="flex items-center gap-4">
         <div className="w-9 h-9 rounded-lg bg-white/4 flex items-center justify-center shrink-0">
@@ -236,6 +241,7 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booki
         </div>
       )}
     </div>
+    </>
   );
 }
 

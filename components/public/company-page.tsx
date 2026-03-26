@@ -16,6 +16,7 @@ import {
   Heart,
 } from "lucide-react";
 import { Company } from "@/lib/types";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const SPORT_ICONS: Record<string, string> = {
   "Society (Futebol 7)": "\u26BD",
@@ -44,7 +45,7 @@ export function CompanyPage({ company }: { company: Company }) {
   return (
     <div className="min-h-screen bg-arena-bg pb-28">
       {/* Hero Cover */}
-      <div className="relative h-72 overflow-hidden">
+      <div className="relative h-72 overflow-hidden hero-overlay">
         <Image
           src={company.coverImage}
           alt={company.name}
@@ -52,22 +53,22 @@ export function CompanyPage({ company }: { company: Company }) {
           className="object-cover"
           priority
         />
-        {/* Cinematic gradient */}
-        <div className="absolute inset-0 bg-linear-to-t from-arena-bg via-arena-bg/50 to-transparent" />
-        <div className="absolute inset-0 bg-linear-to-r from-arena-bg/30 to-transparent" />
+        {/* Cinematic gradient — always dark for image readability */}
+        <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/30 to-transparent" />
 
         {/* Top actions */}
         <div className="absolute top-0 left-0 right-0 flex items-center justify-end px-5 pt-14 pb-4">
           <div className="flex gap-2.5">
+            <ThemeToggle variant="glass" />
             <button
               onClick={handleShare}
-              className="w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center active:scale-95 transition-transform"
             >
               <Share2 size={16} className="text-white/80" />
             </button>
             <button
               onClick={() => setLiked(!liked)}
-              className="w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center active:scale-95 transition-transform"
+              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm border border-white/10 flex items-center justify-center active:scale-95 transition-transform"
             >
               <Heart
                 size={16}
@@ -179,7 +180,7 @@ export function CompanyPage({ company }: { company: Company }) {
                   fill
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-linear-to-t from-arena-surface via-arena-surface/20 to-transparent" />
+                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
                 <div className="absolute top-3.5 left-3.5">
                   <span className="glass border border-white/10 text-white text-xs font-semibold font-heading px-3 py-1.5 rounded-full tracking-wide">
                     {SPORT_ICONS[court.type] || "\uD83C\uDFDF\uFE0F"} {court.type}

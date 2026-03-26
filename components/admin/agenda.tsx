@@ -427,6 +427,8 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
 
       {/* Calendar grid */}
       <div className="bg-arena-surface rounded-2xl border border-arena-border overflow-hidden">
+        <div className="overflow-x-auto no-scrollbar">
+        <div className="min-w-[640px]">
         {/* Day headers */}
         <div className="grid grid-cols-8 border-b border-arena-border">
           <div className="p-2 text-center">
@@ -533,6 +535,8 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
               </div>
             );
           })}
+        </div>
+        </div>
         </div>
       </div>
 
