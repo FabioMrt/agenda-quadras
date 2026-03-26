@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { SessionProvider, signOut } from "next-auth/react";
 import {
   LayoutDashboard,
@@ -12,6 +12,9 @@ import {
   Menu,
   LogOut,
   Bell,
+  Clock,
+  Calendar,
+  X,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
@@ -106,24 +109,33 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const adminRouter = useRouter();
   const [open, setOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [pendingBookings, setPendingBookings] = useState<{ id: string; courtName: string; customerName: string; date: string; startTime: string; endTime: string }[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+
+  const fetchPending = useCallback(() => {
+    fetch("/api/admin/pending-count")
+      .then((r) => r.json())
+      .then((d) => {
+        setPendingCount(d.count || 0);
+        setPendingBookings(d.bookings || []);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (pathname === "/admin/login") return;
-    fetch("/api/admin/pending-count")
-      .then((r) => r.json())
-      .then((d) => setPendingCount(d.count || 0))
-      .catch(() => {});
-    // Poll every 30s
-    const interval = setInterval(() => {
-      fetch("/api/admin/pending-count")
-        .then((r) => r.json())
-        .then((d) => setPendingCount(d.count || 0))
-        .catch(() => {});
-    }, 30000);
+    fetchPending();
+    const interval = setInterval(fetchPending, 30000);
     return () => clearInterval(interval);
-  }, [pathname]);
+  }, [pathname, fetchPending]);
+
+  const formatDateShort = (dateStr: string) => {
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  };
 
   // Don't apply layout to login page
   if (pathname === "/admin/login") {
@@ -154,14 +166,77 @@ export default function AdminLayout({
           </div>
 
           <div className="flex items-center gap-2">
-            <Link href="/admin" className="relative w-10 h-10 rounded-full bg-arena-surface border border-arena-border flex items-center justify-center">
-              <Bell size={18} className="text-arena-text-secondary" />
-              {pendingCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[0.6rem] font-bold rounded-full flex items-center justify-center animate-pulse">
-                  {pendingCount > 9 ? "9+" : pendingCount}
-                </span>
+            <div className="relative">
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative w-10 h-10 rounded-full bg-arena-surface border border-arena-border flex items-center justify-center"
+              >
+                <Bell size={18} className="text-arena-text-secondary" />
+                {pendingCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[0.6rem] font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {pendingCount > 9 ? "9+" : pendingCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifications && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                  <div className="absolute right-0 top-12 w-72 bg-arena-surface border border-arena-border rounded-2xl shadow-xl z-50 overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-arena-border">
+                      <h4 className="font-heading font-bold text-arena-text text-sm">Notificacoes</h4>
+                      <button onClick={() => setShowNotifications(false)}>
+                        <X size={14} className="text-arena-text-muted" />
+                      </button>
+                    </div>
+                    {pendingBookings.length === 0 ? (
+                      <div className="px-4 py-8 text-center">
+                        <Bell size={24} className="text-arena-text-muted mx-auto mb-2" />
+                        <p className="text-arena-text-muted text-xs">Nenhuma pendencia</p>
+                      </div>
+                    ) : (
+                      <div className="max-h-64 overflow-y-auto divide-y divide-arena-border/50">
+                        {pendingBookings.map((bk) => (
+                          <button
+                            key={bk.id}
+                            onClick={() => {
+                              setShowNotifications(false);
+                              adminRouter.push("/admin");
+                            }}
+                            className="w-full flex items-start gap-3 px-4 py-3 hover:bg-arena-surface-elevated transition-colors text-left"
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-arena-gold/15 flex items-center justify-center shrink-0 mt-0.5">
+                              <Clock size={14} className="text-arena-gold" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-arena-text text-xs font-semibold truncate">
+                                {bk.customerName}
+                              </p>
+                              <p className="text-arena-text-muted text-[0.625rem]">
+                                {bk.courtName} · {formatDateShort(bk.date)} · {bk.startTime}
+                              </p>
+                            </div>
+                            <span className="bg-arena-gold/15 text-arena-gold text-[0.5rem] font-heading font-semibold px-1.5 py-0.5 rounded uppercase tracking-wider shrink-0">
+                              Pendente
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {pendingBookings.length > 0 && (
+                      <div className="border-t border-arena-border px-4 py-2.5">
+                        <button
+                          onClick={() => { setShowNotifications(false); adminRouter.push("/admin"); }}
+                          className="w-full text-arena-accent text-xs font-heading font-semibold text-center"
+                        >
+                          Ver todas no Dashboard
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
-            </Link>
+            </div>
 
             <Sheet open={open} onOpenChange={setOpen}>
               <SheetTrigger className="w-10 h-10 rounded-full bg-arena-surface border border-arena-border flex items-center justify-center">
