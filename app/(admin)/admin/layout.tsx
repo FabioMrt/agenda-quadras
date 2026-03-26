@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SessionProvider, signOut } from "next-auth/react";
@@ -11,6 +11,7 @@ import {
   Repeat,
   Menu,
   LogOut,
+  Bell,
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/sonner";
@@ -106,6 +107,23 @@ export default function AdminLayout({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    if (pathname === "/admin/login") return;
+    fetch("/api/admin/pending-count")
+      .then((r) => r.json())
+      .then((d) => setPendingCount(d.count || 0))
+      .catch(() => {});
+    // Poll every 30s
+    const interval = setInterval(() => {
+      fetch("/api/admin/pending-count")
+        .then((r) => r.json())
+        .then((d) => setPendingCount(d.count || 0))
+        .catch(() => {});
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [pathname]);
 
   // Don't apply layout to login page
   if (pathname === "/admin/login") {
@@ -135,10 +153,20 @@ export default function AdminLayout({
             </span>
           </div>
 
-          <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger className="w-10 h-10 rounded-full glass border border-white/10 flex items-center justify-center">
-              <Menu size={18} className="text-white" />
-            </SheetTrigger>
+          <div className="flex items-center gap-2">
+            <Link href="/admin" className="relative w-10 h-10 rounded-full bg-arena-surface border border-arena-border flex items-center justify-center">
+              <Bell size={18} className="text-arena-text-secondary" />
+              {pendingCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[0.6rem] font-bold rounded-full flex items-center justify-center animate-pulse">
+                  {pendingCount > 9 ? "9+" : pendingCount}
+                </span>
+              )}
+            </Link>
+
+            <Sheet open={open} onOpenChange={setOpen}>
+              <SheetTrigger className="w-10 h-10 rounded-full bg-arena-surface border border-arena-border flex items-center justify-center">
+                <Menu size={18} className="text-arena-text-secondary" />
+              </SheetTrigger>
             <SheetContent
               side="left"
               className="w-[260px] bg-arena-surface border-arena-border p-0"
@@ -150,6 +178,7 @@ export default function AdminLayout({
               />
             </SheetContent>
           </Sheet>
+          </div>
         </header>
 
         {/* Page content */}

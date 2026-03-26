@@ -67,11 +67,10 @@ function formatDateBR(dateStr: string) {
   });
 }
 
-function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booking: BookingItem; onStatusChange: (id: string, status: string) => void; alwaysShowDate?: boolean }) {
+function BookingRow({ booking, onStatusChange, alwaysShowDate = false, onWhatsApp }: { booking: BookingItem; onStatusChange: (id: string, status: string) => void; alwaysShowDate?: boolean; onWhatsApp?: (phone: string, message: string) => void }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [showCancelForm, setShowCancelForm] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
-  const [whatsappDialog, setWhatsappDialog] = useState<{ phone: string; message: string } | null>(null);
   const config = STATUS_CONFIG[booking.status];
 
   const handleConfirm = async () => {
@@ -94,7 +93,7 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booki
             `Horario: ${booking.startTime} - ${booking.endTime}\n` +
             `Valor: R$ ${booking.totalPrice},00\n\n` +
             `O pagamento e feito no local. Te esperamos! ⚽`;
-          setWhatsappDialog({ phone: booking.customerPhone, message: msg });
+          onWhatsApp?.(booking.customerPhone, msg);
         }
       }
     } finally {
@@ -123,7 +122,7 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booki
             `Horario: ${booking.startTime} - ${booking.endTime}\n\n` +
             `Motivo: ${cancelReason}\n\n` +
             `Pedimos desculpas pelo inconveniente. Entre em contato para reagendar.`;
-          setWhatsappDialog({ phone: booking.customerPhone, message: msg });
+          onWhatsApp?.(booking.customerPhone, msg);
         }
         setShowCancelForm(false);
       }
@@ -135,14 +134,6 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booki
   const showDate = alwaysShowDate || booking.date !== new Date().toISOString().split("T")[0];
 
   return (
-    <>
-    {whatsappDialog && (
-      <WhatsAppConfirmDialog
-        phone={whatsappDialog.phone}
-        message={whatsappDialog.message}
-        onClose={() => setWhatsappDialog(null)}
-      />
-    )}
     <div className="px-5 py-4">
       <div className="flex items-center gap-4">
         <div className="w-9 h-9 rounded-lg bg-white/4 flex items-center justify-center shrink-0">
@@ -241,7 +232,6 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false }: { booki
         </div>
       )}
     </div>
-    </>
   );
 }
 
@@ -252,6 +242,11 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings, pe
   const router = useRouter();
   const [bookings, setBookings] = useState(initialBookings);
   const [pending, setPending] = useState(initialPending);
+  const [whatsappDialog, setWhatsappDialog] = useState<{ phone: string; message: string } | null>(null);
+
+  const handleWhatsApp = (phone: string, message: string) => {
+    setWhatsappDialog({ phone, message });
+  };
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
   const [dateLoading, setDateLoading] = useState(false);
 
@@ -362,6 +357,7 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings, pe
                 key={booking.id}
                 booking={booking}
                 onStatusChange={handleStatusChange}
+                onWhatsApp={handleWhatsApp}
                 alwaysShowDate
               />
             ))}
@@ -432,11 +428,21 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings, pe
                 key={booking.id}
                 booking={booking}
                 onStatusChange={handleStatusChange}
+                onWhatsApp={handleWhatsApp}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* WhatsApp confirmation dialog — rendered at top level */}
+      {whatsappDialog && (
+        <WhatsAppConfirmDialog
+          phone={whatsappDialog.phone}
+          message={whatsappDialog.message}
+          onClose={() => setWhatsappDialog(null)}
+        />
+      )}
     </div>
   );
 }
