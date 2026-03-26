@@ -94,7 +94,7 @@ export function CourtSchedulePage({
   return (
     <div className="min-h-screen bg-arena-bg pb-28">
       {/* Header Image */}
-      <div className="relative">
+      <div className="relative hero-overlay">
         <div className="h-60 overflow-hidden">
           <Image
             src={court.image}

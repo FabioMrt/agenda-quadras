@@ -108,9 +108,20 @@
     color: var(--arena-text) !important;
   }
 
-  /* But keep white text inside image overlays and accent buttons */
+  /* Keep light text inside image overlays and accent buttons */
   .hero-overlay .text-white,
-  .hero-overlay [class*="text-white"],
+  .hero-overlay [class*="text-white"] {
+    color: #FFFFFF !important;
+  }
+
+  .hero-overlay .text-arena-text-secondary {
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  .hero-overlay .text-arena-text-muted {
+    color: rgba(255, 255, 255, 0.5) !important;
+  }
+
   .bg-arena-accent .text-arena-bg {
     color: #FFFFFF !important;
   }
