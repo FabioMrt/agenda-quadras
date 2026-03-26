@@ -12,7 +12,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const slots = await getAvailableSlots(courtId, new Date(date + "T00:00:00"));
+    const slots = await getAvailableSlots(courtId, new Date(date + "T12:00:00Z"));
 
     return NextResponse.json({ slots });
   } catch {

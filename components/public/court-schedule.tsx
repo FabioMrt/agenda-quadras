@@ -13,7 +13,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { Company, Court, TimeSlot } from "@/lib/types";
-import { getNext7Days } from "@/lib/dates";
+import { getNext7Days, toLocalDateString, todayString } from "@/lib/dates";
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const MONTH_NAMES = [
@@ -56,7 +56,7 @@ export function CourtSchedulePage({
     if (!selectedDate || !court.id) return;
     setLoadingSlots(true);
     setSlotsError(false);
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const dateStr = toLocalDateString(selectedDate);
     fetch("/api/availability", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -77,7 +77,7 @@ export function CourtSchedulePage({
 
   const handleReserve = () => {
     if (!selectedSlot || !selectedDate) return;
-    const dateStr = selectedDate.toISOString().split("T")[0];
+    const dateStr = toLocalDateString(selectedDate);
     router.push(
       `/${company.slug}/quadra/${court.id}/confirmar?date=${dateStr}&time=${selectedSlot.time}&price=${selectedSlot.price}`
     );

@@ -18,6 +18,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { WhatsAppConfirmDialog } from "@/components/admin/whatsapp-confirm";
+import { toLocalDateString, todayString } from "@/lib/dates";
 
 const STATUS_CONFIG = {
   CONFIRMED: {
@@ -131,7 +132,7 @@ function BookingRow({ booking, onStatusChange, alwaysShowDate = false, onWhatsAp
     }
   };
 
-  const showDate = alwaysShowDate || booking.date !== new Date().toISOString().split("T")[0];
+  const showDate = alwaysShowDate || booking.date !== todayString();
 
   return (
     <div className="px-5 py-4">
@@ -247,7 +248,7 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings, pe
   const handleWhatsApp = (phone: string, message: string) => {
     setWhatsappDialog({ phone, message });
   };
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
+  const [selectedDate, setSelectedDate] = useState(todayString());
   const [dateLoading, setDateLoading] = useState(false);
 
   const days = Array.from({ length: 14 }, (_, i) => {
@@ -272,7 +273,7 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings, pe
     fetchBookingsForDate(dateStr);
   };
 
-  const isToday = selectedDate === new Date().toISOString().split("T")[0];
+  const isToday = selectedDate === todayString();
 
   const statCards = [
     { label: "Reservas Hoje", value: stats.todayBookings, icon: CalendarCheck, accent: true },
@@ -372,7 +373,7 @@ export function AdminDashboardClient({ stats, todayBookings: initialBookings, pe
         </h2>
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {days.map((day) => {
-            const dateStr = day.toISOString().split("T")[0];
+            const dateStr = toLocalDateString(day);
             const isSelected = dateStr === selectedDate;
             const dayIsToday = dateStr === new Date().toISOString().split("T")[0];
             return (

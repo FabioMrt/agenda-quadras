@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { todayString } from "@/lib/dates";
 
 interface BookingDetail {
   id: string;
@@ -74,7 +75,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
   const [selectedCourt, setSelectedCourt] = useState<string | undefined>(undefined);
   const [viewMode, setViewMode] = useState<ViewMode>("day");
   const [selectedDayIndex, setSelectedDayIndex] = useState(() => {
-    const todayStr = new Date().toISOString().split("T")[0];
+    const todayStr = todayString();
     const idx = initialWeekData.findIndex((d) => d.date === todayStr);
     return idx >= 0 ? idx : 0;
   });
@@ -92,7 +93,7 @@ export function AgendaClient({ initialWeekData, courts }: Props) {
   const [cancelReason, setCancelReason] = useState("");
   const [cancelLoading, setCancelLoading] = useState(false);
 
-  const today = new Date().toISOString().split("T")[0];
+  const today = todayString();
 
   // Auto-detect: mobile = day view, desktop = week view
   useEffect(() => {

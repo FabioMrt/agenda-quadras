@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
   }
 
   const dateParam = req.nextUrl.searchParams.get("date");
-  const date = dateParam ? new Date(dateParam + "T00:00:00") : new Date(new Date().setHours(0, 0, 0, 0));
+  const date = dateParam ? new Date(dateParam + "T12:00:00Z") : new Date(new Date().toISOString().split("T")[0] + "T12:00:00Z");
 
   const bookings = await prisma.booking.findMany({
     where: {

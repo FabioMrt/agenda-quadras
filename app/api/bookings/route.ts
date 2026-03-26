@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.booking.findFirst({
       where: {
         courtId,
-        date: new Date(date + "T00:00:00"),
+        date: new Date(date + "T12:00:00Z"),
         startTime,
         status: { not: "CANCELLED" },
       },
@@ -91,7 +91,7 @@ export async function POST(req: NextRequest) {
         userId: session?.user?.id ?? null,
         guestName,
         guestPhone,
-        date: new Date(date + "T00:00:00"),
+        date: new Date(date + "T12:00:00Z"),
         startTime,
         endTime,
         totalPrice,

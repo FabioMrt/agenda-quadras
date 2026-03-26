@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const existing = await prisma.booking.findFirst({
       where: {
         courtId,
-        date: new Date(date + "T00:00:00"),
+        date: new Date(date + "T12:00:00Z"),
         startTime,
         status: { not: "CANCELLED" },
       },
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Get price from availability rule
-    const dayOfWeek = new Date(date + "T00:00:00").getDay();
+    const dayOfWeek = new Date(date + "T12:00:00Z").getDay();
     const rule = await prisma.availabilityRule.findFirst({
       where: { courtId, dayOfWeek },
     });
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
         courtId,
         guestName: guestName || notes || "Reserva manual",
         guestPhone: guestPhone || null,
-        date: new Date(date + "T00:00:00"),
+        date: new Date(date + "T12:00:00Z"),
         startTime,
         endTime,
         totalPrice: rule?.price ?? 0,
