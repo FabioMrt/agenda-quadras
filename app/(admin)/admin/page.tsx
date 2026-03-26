@@ -2,7 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { getAdminStats, getTodayBookings, getPendingBookings } from "@/lib/queries/admin";
 import { AdminDashboardClient } from "@/components/admin/dashboard";
-import { toLocalDateString } from "@/lib/dates";
+import { toUTCDateString } from "@/lib/dates";
 
 export default async function AdminDashboard() {
   const session = await auth();
@@ -22,7 +22,7 @@ export default async function AdminDashboard() {
     courtName: b.court.name,
     customerName: b.guestName ?? b.user?.name ?? b.user?.email ?? "Usuario",
     customerPhone: b.guestPhone ?? "",
-    date: toLocalDateString(b.date),
+    date: toUTCDateString(b.date),
     startTime: b.startTime,
     endTime: b.endTime,
     totalPrice: b.totalPrice,

@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma";
 
 export async function getAdminStats(companyId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStr = new Date().toISOString().split("T")[0];
+  const today = new Date(todayStr + "T00:00:00Z");
 
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const startOfMonth = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), 1));
 
   const [todayBookings, monthBookings, activeCourts, totalSlots] =
     await Promise.all([
@@ -35,7 +35,7 @@ export async function getAdminStats(companyId: string) {
 
   // Approximate occupancy: confirmed bookings / total available slots
   const monthBookingsCount = monthBookings.length;
-  const daysInMonth = today.getDate();
+  const daysInMonth = today.getUTCDate();
   const dailySlots = totalSlots > 0 ? totalSlots : 1;
   const occupancyRate =
     totalSlots > 0
@@ -51,8 +51,8 @@ export async function getAdminStats(companyId: string) {
 }
 
 export async function getTodayBookings(companyId: string) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const todayStr = new Date().toISOString().split("T")[0];
+  const today = new Date(todayStr + "T00:00:00Z");
 
   return prisma.booking.findMany({
     where: {
@@ -73,7 +73,7 @@ export async function getPendingBookings(companyId: string) {
     where: {
       court: { companyId },
       status: "PENDING",
-      date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      date: { gte: new Date(new Date().toISOString().split("T")[0] + "T00:00:00Z") },
     },
     include: {
       court: { include: { company: true } },
@@ -98,15 +98,18 @@ export async function getAdminBookings(companyId: string) {
 }
 
 export async function getWeekBookings(companyId: string, weekOffset: number = 0) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  // Use UTC to avoid timezone issues
+  const now = new Date();
+  const todayStr = now.toISOString().split("T")[0];
+  const today = new Date(todayStr + "T00:00:00Z");
 
-  // Monday of target week
+  // Monday of target week (UTC)
+  const dayOfWeek = today.getUTCDay();
   const monday = new Date(today);
-  monday.setDate(today.getDate() - today.getDay() + 1 + weekOffset * 7);
+  monday.setUTCDate(today.getUTCDate() - dayOfWeek + 1 + weekOffset * 7);
 
   const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
+  sunday.setUTCDate(monday.getUTCDate() + 6);
 
   const bookings = await prisma.booking.findMany({
     where: {
@@ -126,7 +129,7 @@ export async function getWeekBookings(companyId: string, weekOffset: number = 0)
   const days = [];
   for (let d = 0; d < 7; d++) {
     const date = new Date(monday);
-    date.setDate(monday.getDate() + d);
+    date.setUTCDate(monday.getUTCDate() + d);
     const dateStr = date.toISOString().split("T")[0];
 
     const dayBookings = bookings
@@ -145,8 +148,8 @@ export async function getWeekBookings(companyId: string, weekOffset: number = 0)
 
     days.push({
       date: dateStr,
-      dayName: DAY_NAMES[date.getDay()],
-      dayNumber: date.getDate(),
+      dayName: DAY_NAMES[date.getUTCDay()],
+      dayNumber: date.getUTCDate(),
       bookings: dayBookings,
     });
   }
@@ -156,7 +159,7 @@ export async function getWeekBookings(companyId: string, weekOffset: number = 0)
 
 export async function getReportData(companyId: string) {
   const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
 
   const [monthBookings, courts] = await Promise.all([
     prisma.booking.findMany({
@@ -198,7 +201,7 @@ export async function getReportData(companyId: string) {
     .slice(0, 5)
     .map(([hour, count]) => {
       const endHour = (parseInt(hour) + 1).toString().padStart(2, "0") + ":00";
-      const maxPossible = now.getDate() * courts.length;
+      const maxPossible = now.getUTCDate() * courts.length;
       return {
         hour: `${hour}-${endHour}`,
         count,
@@ -220,7 +223,7 @@ export async function getReportData(companyId: string) {
   const topCourt = courtStats[0] ?? null;
 
   // Occupancy rate
-  const totalSlots = courts.length > 0 ? courts.length * 16 * now.getDate() : 1;
+  const totalSlots = courts.length > 0 ? courts.length * 16 * now.getUTCDate() : 1;
   const occupancyRate = Math.min(
     Math.round((monthBookings.length / totalSlots) * 100),
     100
@@ -246,11 +249,7 @@ export async function getCompanyCourts(companyId: string) {
           bookings: {
             where: {
               date: {
-                gte: new Date(
-                  new Date().getFullYear(),
-                  new Date().getMonth(),
-                  1
-                ),
+                gte: new Date(Date.UTC(new Date().getUTCFullYear(), new Date().getUTCMonth(), 1)),
               },
               status: { not: "CANCELLED" },
             },

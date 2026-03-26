@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     where: {
       court: { companyId },
       status: "PENDING",
-      date: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      date: { gte: new Date(new Date().toISOString().split("T")[0] + "T00:00:00Z") },
     },
     include: {
       court: true,

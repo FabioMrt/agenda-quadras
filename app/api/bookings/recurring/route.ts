@@ -38,21 +38,21 @@ export async function POST(req: NextRequest) {
     const endHour = (parseInt(startTime) + 1).toString().padStart(2, "0");
     const endTime = `${endHour}:00`;
 
-    // Generate dates for the next N weeks on the specified day
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    // Generate dates for the next N weeks on the specified day (UTC)
+    const todayStr = new Date().toISOString().split("T")[0];
+    const today = new Date(todayStr + "T12:00:00Z");
 
     const dates: Date[] = [];
     const current = new Date(today);
 
     // Find next occurrence of dayOfWeek
-    while (current.getDay() !== dayOfWeek) {
-      current.setDate(current.getDate() + 1);
+    while (current.getUTCDay() !== dayOfWeek) {
+      current.setUTCDate(current.getUTCDate() + 1);
     }
 
     for (let i = 0; i < weeks; i++) {
       dates.push(new Date(current));
-      current.setDate(current.getDate() + 7);
+      current.setUTCDate(current.getUTCDate() + 7);
     }
 
     // Check for conflicts and create bookings
