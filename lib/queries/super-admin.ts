@@ -91,6 +91,7 @@ export async function getAllCompanies() {
         .join("")
         .slice(0, 2)
         .toUpperCase(),
+      logoUrl: company.logoUrl ?? null,
       adminName: admin?.name ?? "Sem admin",
       adminEmail: admin?.email ?? "",
       city: company.city ?? "",
@@ -179,6 +180,10 @@ export async function getCompanyById(id: string) {
       .join("")
       .slice(0, 2)
       .toUpperCase(),
+    logoUrl: company.logoUrl ?? null,
+    phone: company.phone ?? "",
+    whatsapp: company.whatsapp ?? "",
+    address: company.address ?? "",
     adminName: admin?.name ?? "Sem admin",
     adminEmail: admin?.email ?? "",
     city: company.city ?? "",

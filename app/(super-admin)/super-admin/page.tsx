@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { getSuperAdminStats, getAllCompanies } from "@/lib/queries/super-admin";
 import { SuperAdminDashboardClient } from "@/components/super-admin/dashboard";
 
+export const dynamic = "force-dynamic";
+
 export default async function SuperAdminDashboard() {
   const session = await auth();
   if (!session?.user) redirect("/super-admin/login");

@@ -13,6 +13,7 @@ interface CompanyItem {
   id: string;
   name: string;
   logo: string;
+  logoUrl: string | null;
   city: string;
   courtsCount: number;
   monthlyRevenue: number;
@@ -113,10 +114,12 @@ export function SuperAdminDashboardClient({ stats, companies }: Props) {
               href={`/super-admin/empresas/${company.id}`}
               className="flex items-center gap-4 px-5 py-4 hover:bg-white/2 transition-colors"
             >
-              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-arena-accent to-emerald-500 flex items-center justify-center shrink-0">
-                <span className="text-arena-bg font-heading font-extrabold text-xs">
-                  {company.logo}
-                </span>
+              <div className="w-10 h-10 rounded-xl bg-linear-to-br from-arena-accent to-emerald-500 flex items-center justify-center shrink-0 overflow-hidden">
+                {company.logoUrl ? (
+                  <img src={company.logoUrl} alt={company.name} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-arena-bg font-heading font-extrabold text-xs">{company.logo}</span>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">

@@ -84,10 +84,14 @@ export function CompanyPage({ company }: { company: Company }) {
 
         {/* Logo badge */}
         <div className="absolute bottom-5 left-5">
-          <div className="w-[72px] h-[72px] rounded-2xl bg-linear-to-br from-arena-accent to-emerald-500 flex items-center justify-center shadow-lg glow-accent border-2 border-arena-accent/20">
-            <span className="text-arena-bg font-heading font-extrabold text-2xl tracking-tight">
-              {company.logo}
-            </span>
+          <div className="w-[72px] h-[72px] rounded-2xl bg-linear-to-br from-arena-accent to-emerald-500 flex items-center justify-center shadow-lg glow-accent border-2 border-arena-accent/20 overflow-hidden">
+            {company.logoUrl ? (
+              <img src={company.logoUrl} alt={company.name} className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-arena-bg font-heading font-extrabold text-2xl tracking-tight">
+                {company.logo}
+              </span>
+            )}
           </div>
         </div>
       </div>

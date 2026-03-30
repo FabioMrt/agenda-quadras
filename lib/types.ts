@@ -21,6 +21,7 @@ export interface Company {
   name: string;
   shortName: string;
   logo: string;
+  logoUrl: string | null;
   coverImage: string;
   description: string;
   address: string;

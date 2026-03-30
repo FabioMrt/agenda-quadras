@@ -24,6 +24,7 @@ export async function getCompanyBySlug(slug: string): Promise<Company | null> {
       .join("")
       .slice(0, 2)
       .toUpperCase(),
+    logoUrl: company.logoUrl ?? null,
     coverImage:
       "https://images.unsplash.com/photo-1645819598410-06aea57ce9a6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxzcG9ydHMlMjBjb21wbGV4JTIwYnVpbGRpbmclMjBleHRlcmlvciUyMG5pZ2h0JTIwbGlnaHRzfGVufDF8fHx8MTc3NDQ0Nzc1NXww&ixlib=rb-4.1.0&q=80&w=1080",
     description: "",

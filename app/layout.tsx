@@ -34,7 +34,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="pt-BR" className={`${sora.variable} ${jakarta.variable}`} suppressHydrationWarning>
-      <body className="min-h-screen bg-arena-bg font-body antialiased overflow-x-hidden">
+      <body suppressHydrationWarning className="min-h-screen bg-arena-bg font-body antialiased overflow-x-hidden">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <div className="noise" />
           {children}

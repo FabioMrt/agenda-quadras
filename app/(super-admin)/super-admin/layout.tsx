@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Toaster } from "@/components/ui/sonner";
 
 const NAV_ITEMS = [
   { href: "/super-admin", label: "Dashboard", icon: LayoutDashboard },
@@ -146,6 +147,7 @@ export default function SuperAdminLayout({
         <main className="px-4 py-6 lg:px-8 lg:py-8 max-w-full">{children}</main>
       </div>
     </div>
+    <Toaster theme="dark" position="top-center" richColors />
     </SessionProvider>
   );
 }
